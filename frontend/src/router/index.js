@@ -184,7 +184,8 @@ const routes = [
   {
     path: '/download-and-explore',
     component: DownloadAndExplore,
-    name: 'DownloadAndExplore'
+    name: 'DownloadAndExplore',
+    meta: { requiresAuth: true },
   },
   {
     path: '/bookmarks',
