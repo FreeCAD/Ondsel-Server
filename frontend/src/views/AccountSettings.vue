@@ -261,7 +261,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                     {{ user.fullTierName }}
                   </v-list-item-subtitle>
                   <v-list-item-action class="justify-end">
-                    <!-- <v-btn
+                    <v-btn
                       variant="elevated"
                       color="secondary"
                       size="small"
@@ -269,7 +269,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                       :disabled="loggedInUser.user.tier===SubscriptionTypeMap.unverified"
                     >
                       Choose New Tier
-                    </v-btn> -->
+                    </v-btn>
                     <v-btn variant="elevated" color="secondary" class="ml-2" size="small" @click="gotoAccountHistory()">
                       View Account History
                     </v-btn>
