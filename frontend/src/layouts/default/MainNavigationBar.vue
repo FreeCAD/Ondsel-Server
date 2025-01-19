@@ -133,7 +133,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               Login
             </v-btn>
           </template>
-          <!--<template v-if="currentRouteName !== 'SignUp'">
+          <template v-if="currentRouteName !== 'SignUp'">
             <v-btn
               variant="tonal"
               color="primary"
@@ -143,7 +143,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             >
               SignUp
             </v-btn>
-          </template>-->
+          </template>
         </template>
       </v-list-item>
       <v-list-item
