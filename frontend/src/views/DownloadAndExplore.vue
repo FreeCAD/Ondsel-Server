@@ -220,7 +220,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
     <v-card flat>
       <v-card-text>
-        <i>You can always get back to this page from the left-hand menu.</i>
+        <i>You can always get back to this page from the right-hand app-bar menu.</i>
       </v-card-text>
     </v-card>
   </v-container>
@@ -228,13 +228,15 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <script>
 
+import {mapState} from "vuex";
+import {SubscriptionTypeMap} from "@/store/services/users";
 import SignupProgressBar from "@/components/SignupProgressBar.vue";
 import {models} from "@feathersjs/vuex";
 import DownloadPublishedLink from "@/components/DownloadPublishedLink.vue";
 import {marked} from "marked";
 import MarkdownViewer from "@/components/MarkdownViewer.vue";
 
-const { Agreements } = models.api;
+const { Publisher, Agreements } = models.api;
 
 export default {
   name: 'DownloadAndExplore',
@@ -268,104 +270,49 @@ export default {
     userId: '',
   }),
   computed: {
+    ...mapState('auth', { loggedInUser: 'payload' }),
+    ...mapState('auth', ['user']),
   },
   async created() {
+    if (this.loggedInUser.user.tier === SubscriptionTypeMap.unverified) {
+      this.$router.push({name: 'PendingVerification'})
+    }
+    await this.getSurveyPrompt();
+    let osVer = 'unknown';
+    let buildDate = 'unknown';
     let osd = {};
-    osd['Linux-x86_64.AppImage'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/2024.2.2/Ondsel_ES_2024.2.2.37240-Linux-x86_64.AppImage',
-      shortName: this.releaseFileTypes['Linux-x86_64.AppImage'],
-      releaseDate: false
-    }
-    osd['Linux-x86_64.AppImage-SHA256.txt'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/2024.2.2/Ondsel_ES_2024.2.2.37240-Linux-x86_64.AppImage-SHA256.txt',
-      shortName: this.releaseFileTypes['Linux-x86_64.AppImage-SHA256.txt'],
-      releaseDate: false
-    }
-    osd['Linux-aarch64.AppImage'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/2024.2.2/Ondsel_ES_2024.2.2.37240-Linux-aarch64.AppImage',
-      shortName: this.releaseFileTypes['Linux-aarch64.AppImage'],
-      releaseDate: false
-    }
-    osd['Linux-aarch64.AppImage-SHA256.txt'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/2024.2.2/Ondsel_ES_2024.2.2.37240-Linux-aarch64.AppImage-SHA256.txt',
-      shortName: this.releaseFileTypes['Linux-aarch64.AppImage-SHA256.txt'],
-      releaseDate: false
-    }
-    osd['macOS-apple-silicon-arm64.dmg'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/2024.2.2/Ondsel_ES_2024.2.2.37240-macOS-apple-silicon-arm64.dmg',
-      shortName: this.releaseFileTypes['macOS-apple-silicon-arm64.dmg'],
-      releaseDate: false
-    }
-    osd['macOS-apple-silicon-arm64.dmg-SHA256.txt'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/2024.2.2/Ondsel_ES_2024.2.2.37240-macOS-apple-silicon-arm64.dmg-SHA256.txt',
-      shortName: this.releaseFileTypes['macOS-apple-silicon-arm64.dmg-SHA256.txt'],
-      releaseDate: false
-    }
-    osd['macOS-intel-x86_64.dmg'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/2024.2.2/Ondsel_ES_2024.2.2.37240-macOS-intel-x86_64.dmg',
-      shortName: this.releaseFileTypes['macOS-intel-x86_64.dmg'],
-      releaseDate: false
-    }
-    osd['macOS-intel-x86_64.dmg-SHA256.txt'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/2024.2.2/Ondsel_ES_2024.2.2.37240-macOS-intel-x86_64.dmg-SHA256.txt',
-      shortName: this.releaseFileTypes['macOS-intel-x86_64.dmg-SHA256.txt'],
-      releaseDate: false
-    }
-    osd['Windows-x86_64-installer.exe'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/2024.2.2/Ondsel_ES-2024.2.2.37240-Windows-x86_64-installer.exe',
-      shortName: this.releaseFileTypes['Windows-x86_64-installer.exe'],
-      releaseDate: false
-    }
-    osd['Windows-x86_64-installer.exe-SHA256.txt'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/2024.2.2/Ondsel_ES-2024.2.2.37240-Windows-x86_64-installer.exe-SHA256.txt',
-      shortName: this.releaseFileTypes['Windows-x86_64-installer.exe-SHA256.txt'],
-      releaseDate: false
-    }
     let wd = {};
-    wd['Linux-x86_64.AppImage'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/weekly-builds/Ondsel_ES_weekly-builds-39025-Linux-x86_64.AppImage',
-      shortName: this.weeklyFileTypes['Linux-x86_64.AppImage'],
-      releaseDate: false
+    const results = await Publisher.find({query: {$limit: 100}});
+    const publishedList = results.data;
+    for (const item of publishedList) {
+      const target = item.target;
+      const cadence = item.releaseCadence;
+      let url;
+      if (import.meta.env.VITE_DEV_PROXY_TO_API_HACK) {
+        url = `${import.meta.env.VITE_DEV_PROXY_TO_API_HACK}/publisher/${item._id}/download/${item.filename}`;
+      } else {
+        url = `/publisher/${item._id}/download/${item.filename}`;
+      }
+      if (cadence === 'stable') {
+        const shortName = this.releaseFileTypes[target];
+        osd[target] = item;
+        osd[target].browser_download_url = url;
+        osd[target].shortName = shortName;
+        osd[target].releaseDate = false; // prevents display
+        osVer = item.release;
+      } else {
+        const shortName = this.weeklyFileTypes[target];
+        wd[target] = item;
+        wd[target].browser_download_url = url;
+        wd[target].shortName = shortName;
+        buildDate = this.dateFormat(item.releaseDate);
+      }
     }
-    wd['Linux-aarch64.AppImage'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/weekly-builds/Ondsel_ES_weekly-builds-39025-Linux-aarch64.AppImage',
-      shortName: this.weeklyFileTypes['Linux-aarch64.AppImage'],
-      releaseDate: false
-    }
-    wd['macOS-apple-silicon-arm64.dmg'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/weekly-builds/Ondsel_ES_weekly-builds-39025-macOS-apple-silicon-arm64.dmg',
-      shortName: this.weeklyFileTypes['macOS-apple-silicon-arm64.dmg'],
-      releaseDate: false
-    }
-    wd['macOS-intel-x86_64.dmg'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/weekly-builds/Ondsel_ES_weekly-builds-39025-macOS-intel-x86_64.dmg',
-      shortName: this.weeklyFileTypes['macOS-intel-x86_64.dmg'],
-      releaseDate: false
-    }
-    wd['Windows-x86_64.7z'] = {
-      browser_download_url: 'https://github.com/Ondsel-Development/assets/releases/download/weekly-builds/Ondsel_ES_weekly-builds-39025-Windows-x86_64.7z',
-      shortName: this.weeklyFileTypes['Windows-x86_64.7z'],
-      releaseDate: false
-    }
-    //   if (cadence === 'stable') {
-    //     const shortName = this.releaseFileTypes[target];
-    //     osd[target] = item;
-    //     osd[target].browser_download_url = url;
-    //     osd[target].shortName = shortName;
-    //     osd[target].releaseDate = false; // prevents display
-    //     osVer = item.release;
-    //   } else {
-    //     const shortName = this.weeklyFileTypes[target];
-    //     wd[target] = item;
-    //     wd[target].browser_download_url = url;
-    //     wd[target].shortName = shortName;
-    //     buildDate = this.dateFormat(item.releaseDate);
-    //   }
-    // }
     this.ondselEsDownload = osd;
-    this.ondselEsVersionTxt = "2024.2.2";
+    this.ondselEsVersionTxt = osVer;
     this.weeklyDownload = wd;
-    this.weeklyBuildDate = "Oct 22, 2024";
+    this.weeklyBuildDate = buildDate;
+    this.userId = this.user._id.toString();
   },
   methods: {
     async getSurveyPrompt() {

@@ -5,7 +5,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
 <template>
-  <a :href="`${details?.browser_download_url}`">
+  <form method="POST" :action="`${details?.browser_download_url}`">
+    <input type="hidden" name="downloadCounter" :value="`${getObscuredForCustomMiddleware()}`">
     <v-btn
       v-if="small"
       flat
@@ -32,7 +33,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </span>
       </span>
     </v-btn>
-  </a>
+
+  </form>
 </template>
 
 <script>
