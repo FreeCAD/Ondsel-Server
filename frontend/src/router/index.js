@@ -88,12 +88,12 @@ const routes = [
     component: LegalDoc,
     name: 'LegalDoc',
   },
-  // {
-  //   path: '/choose-tier',
-  //   component: ChooseTier,
-  //   name: 'ChooseTier',
-  //   meta: { requiresAuth: true },
-  // },
+  {
+    path: '/choose-tier',
+    component: ChooseTier,
+    name: 'ChooseTier',
+    meta: { requiresAuth: true },
+  },
   {
     path: '/initial-purchase-for-peer/:stripe_session_id',
     component: InitialPurchaseForPeer,
