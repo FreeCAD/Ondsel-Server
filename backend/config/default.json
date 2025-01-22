@@ -30,5 +30,6 @@
       "usernameField": "email",
       "passwordField": "password"
     }
-  }
+  },
+  "useS3": false
 }
