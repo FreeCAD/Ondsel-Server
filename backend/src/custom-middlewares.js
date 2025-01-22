@@ -6,6 +6,7 @@ import axios from 'axios';
 import { logger } from './logger.js';
 import _ from 'lodash';
 import { readFile } from 'fs/promises';
+import fs from 'fs';
 import path from 'path';
 import { authenticate } from '@feathersjs/express'
 import {
@@ -117,6 +118,29 @@ function handlePublishedFileDownload(app) {
   )
 }
 
+function handleLocalFileDownload(app) {
+  app.use(
+    '/upload/:fileName/download',
+    // tryToAuthentication,
+    async (req, res, next) => {
+      try {
+        const { fileName } = req.params;
+        if (fs.existsSync(path.join('uploads', fileName))) {
+          // Set appropriate headers for file download
+          res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+          res.setHeader('Content-Type', 'application/octet-stream');
+          res.sendFile(fileName, { root: path.resolve('uploads') });
+        } else {
+          res.status(500).json({ error: 'File not found!' });
+        }
+      } catch (e) {
+        logger.error(e);
+        next(e);
+      }
+    }
+  )
+}
+
 const tryToAuthentication = async (req, res, next) => {
 
   await authenticate('jwt')(req, res, async (authError) => {
@@ -166,6 +190,7 @@ export function registerCustomMiddlewares(app) {
   handleDownloadSharedModelFile(app);
   handleDownloadFile(app);
   handlePublishedFileDownload(app);
+  handleLocalFileDownload(app);
   handleStatusEndpoint(app);
 }
 

@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import fs from 'fs'
+import path from 'path'
 import AWS from 'aws-sdk'
 import Store from 's3-blob-store'
 import BlobService from 'feathers-blob'
@@ -9,6 +11,7 @@ import multer from 'multer'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { GetObjectCommand, S3Client, HeadObjectCommand, CopyObjectCommand } from '@aws-sdk/client-s3'
 import { BadRequest } from '@feathersjs/errors'
+import dauria from 'dauria'
 
 const customerFileNameRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.([0-9a-z]+)$/i;
 const generatedObjRegex = /^[0-9a-fA-F]{24}_generated\.(:?OBJ|BREP|FCSTD)$/;
@@ -27,13 +30,27 @@ class UploadService {
     this.options = options;
     this.blobService = blobService;
     this.s3Client = s3Client;
+    this.useS3 = options.app.get('useS3'); // Flag to toggle S3 usage
+    this.appUrl = `http://${options.app.get('host')}:${options.app.get('port')}`
+  }
+
+  getLocalFilePath(fileName) {
+    return path.join(path.resolve('uploads'), fileName);
   }
 
   getPublicUrl(fileName, bucket) {
-    return `https://${this.options.app.get('awsClientModelBucket')}.s3.amazonaws.com/${fileName}`;
+    if (this.useS3) {
+      return `https://${this.options.app.get('awsClientModelBucket')}.s3.amazonaws.com/${fileName}`;
+    }
+
+    return `${this.appUrl}/upload/${encodeURIComponent(fileName)}/download`;
   }
 
   async getSignedFileUrl(fileName, bucket, expiresIn) {
+    if (!this.useS3) {
+      return `${this.appUrl}/upload/${fileName}/download`;
+    }
+
     const command = new GetObjectCommand({
       Bucket: bucket,
       Key: fileName,
@@ -43,6 +60,14 @@ class UploadService {
   }
 
   async getFileContent(bucketName, fileName) {
+    if (!this.useS3) {
+      const filePath = this.getLocalFilePath(fileName);
+      if (!fs.existsSync(filePath)) {
+        throw new BadRequest('File not found!');
+      }
+      return fs.readFileSync(filePath, 'utf-8');
+    }
+
     const command = new GetObjectCommand({
       Bucket: bucketName,
       Key: fileName,
@@ -57,6 +82,10 @@ class UploadService {
   }
 
   async checkFileExists(bucketName, fileName) {
+    if (!this.useS3) {
+      return fs.existsSync(this.getLocalFilePath(fileName));
+    }
+
     try {
       const params = {
         Bucket: bucketName,
@@ -116,11 +145,27 @@ class UploadService {
       data.id = `public/${data.id}`;
     }
 
-    return await this.blobService.create(data, params);
+    if (this.useS3) {
+      return await this.blobService.create(data, params);
+    } else {
+      const filePath = this.getLocalFilePath(data.id);
+      const buffer = dauria.parseDataURI(data.uri).buffer;
+      fs.writeFileSync(filePath, buffer);
+      return { id: data.id, size: buffer.length };
+    }
   }
 
   async remove(id, _params) {
-    return await this.blobService.remove(id, _params)
+    if (this.useS3) {
+      return await this.blobService.remove(id, _params);
+    } else {
+      const filePath = this.getLocalFilePath(id);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        return { id };
+      }
+      throw new BadRequest('File not found!');
+    }
   }
 
   async copy(sourceKey, destinationKey, _params) {
@@ -135,14 +180,26 @@ class UploadService {
       throw new BadRequest(`File (${sourceKey}) does not exist!`);
     }
 
-    // Create a copy operation using the CopyObjectCommand
-    const copyCommand = new CopyObjectCommand({
-      CopySource: `/${bucketName}/${sourceKey}`,
-      Bucket: bucketName,
-      Key: destinationKey,
-    });
+    if (this.useS3) {
+      // Create a copy operation using the CopyObjectCommand
+      const copyCommand = new CopyObjectCommand({
+        CopySource: `/${bucketName}/${sourceKey}`,
+        Bucket: bucketName,
+        Key: destinationKey,
+      });
 
-    return await this.s3Client.send(copyCommand);
+      return await this.s3Client.send(copyCommand);
+    } else {
+      const sourceFilePath = this.getLocalFilePath(sourceKey);
+      const destinationFilePath = this.getLocalFilePath(destinationKey);
+
+      if (!fs.existsSync(sourceFilePath)) {
+        throw new BadRequest(`Source file (${sourceKey}) does not exist!`);
+      }
+
+      fs.copyFileSync(sourceFilePath, destinationFilePath);
+      return { sourceKey, destinationKey };
+    }
   }
 
   async upsert(sourceKey, destinationKey, _params) {
@@ -156,14 +213,26 @@ class UploadService {
     // if (isDestinationFileExist) {
     // }
 
-    // Create a copy operation using the CopyObjectCommand
-    const copyCommand = new CopyObjectCommand({
-      CopySource: `/${bucketName}/${sourceKey}`,
-      Bucket: bucketName,
-      Key: destinationKey,
-    });
+    if (this.useS3) {
+      // Create a copy operation using the CopyObjectCommand
+      const copyCommand = new CopyObjectCommand({
+        CopySource: `/${bucketName}/${sourceKey}`,
+        Bucket: bucketName,
+        Key: destinationKey,
+      });
 
-    return await this.s3Client.send(copyCommand);
+      return await this.s3Client.send(copyCommand);
+    } else {
+      const sourceFilePath = this.getLocalFilePath(sourceKey);
+      const destinationFilePath = this.getLocalFilePath(destinationKey);
+
+      if (!fs.existsSync(sourceFilePath)) {
+        throw new BadRequest(`Source file (${sourceKey}) does not exist!`);
+      }
+
+      fs.copyFileSync(sourceFilePath, destinationFilePath);
+      return { sourceKey, destinationKey };
+    }
   }
 }
 
@@ -178,22 +247,25 @@ export const getUploadService = function(app){
     secretAccessKey: app.get('awsSecretAccessKey'),
   }
 
-  const s3 = new AWS.S3(credentials);
+  let blobStore, blobUploadService, s3Client;
+  if (app.get('useS3')) {
+    const s3 = new AWS.S3(credentials);
 
-  const blobStore = Store({
-    client: s3,
-    bucket: app.get('awsClientModelBucket')
-  });
+    blobStore = Store({
+      client: s3,
+      bucket: app.get('awsClientModelBucket')
+    });
 
-  const blobUploadService = BlobService({
-    Model: blobStore,
-    returnUri: false,
-  });
+    blobUploadService = BlobService({
+      Model: blobStore,
+      returnUri: false,
+    });
 
-  const s3Client = new S3Client({
-    credentials: credentials,
-    region: app.get('awsRegion')
-  });
+    s3Client = new S3Client({
+      credentials: credentials,
+      region: app.get('awsRegion')
+    });
+  }
 
   return new UploadService(getOptions(app), blobUploadService, s3Client);
 }
