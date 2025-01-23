@@ -38,17 +38,26 @@ class UploadService {
     return path.join(path.resolve('uploads'), fileName);
   }
 
-  getPublicUrl(fileName, bucket) {
+  getAppUrl(params) {
+    // Get base URL from request, fallback to configured host/port if not available
+    if (params?.headers?.host) {
+      const protocol = params.headers['x-forwarded-proto'] || 'http';
+      return `${protocol}://${params.headers.host}`;
+    }
+    return `http://${this.options.app.get('host')}:${this.options.app.get('port')}`;
+  }
+
+  getPublicUrl(fileName, bucket, params) {
     if (this.useS3) {
       return `https://${this.options.app.get('awsClientModelBucket')}.s3.amazonaws.com/${fileName}`;
     }
 
-    return `${this.appUrl}/upload/${encodeURIComponent(fileName)}/download`;
+    return `${this.getAppUrl(params)}/upload/download/${encodeURIComponent(fileName)}`;
   }
 
-  async getSignedFileUrl(fileName, bucket, expiresIn) {
+  async getSignedFileUrl(fileName, bucket, expiresIn, params) {
     if (!this.useS3) {
-      return `${this.appUrl}/upload/${fileName}/download`;
+      return `${this.getAppUrl(params)}/upload/download/${fileName}`;
     }
 
     const command = new GetObjectCommand({
@@ -119,9 +128,9 @@ class UploadService {
         return this.getFileContent(bucketName, id);
       }
       if (id.includes('public/')) {
-        url = this.getPublicUrl(id, bucketName);
+        url = this.getPublicUrl(id, bucketName, _params);
       } else {
-        url = await this.getSignedFileUrl(id, bucketName, 3600);
+        url = await this.getSignedFileUrl(id, bucketName, 3600, _params);
       }
     }
     return { url: url };
