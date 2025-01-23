@@ -120,7 +120,7 @@ function handlePublishedFileDownload(app) {
 
 function handleLocalFileDownload(app) {
   app.use(
-    '/upload/:fileName/download',
+    '/upload/download/:fileName',
     // tryToAuthentication,
     async (req, res, next) => {
       try {
