@@ -17,7 +17,7 @@ export default {
   methods: {
     async downloadFile(uniqueFileName, custFileName) {
       this.isFileDownloadInProgress = true;
-      const fileEndpoint = `${uploadEndpoint}/${uniqueFileName}`;
+      const fileEndpoint = `${uploadEndpoint}/${encodeURIComponent(uniqueFileName)}`;
       const res = await axios(
         {
           method: 'GET',

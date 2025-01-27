@@ -226,7 +226,7 @@ export default {
       }
     },
     retrieveFileByUniqueName: async (context, detail) => {
-      const uniqueFileName = detail.uniqueFileName;
+      const uniqueFileName = encodeURIComponent(detail.uniqueFileName);
       const accessToken = detail.accessToken;
       const uploadEndpoint = `${import.meta.env.VITE_APP_API_URL}upload`
       const fileEndpoint = `${uploadEndpoint}/${uniqueFileName}`;
