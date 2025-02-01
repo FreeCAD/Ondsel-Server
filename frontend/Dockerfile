@@ -4,6 +4,11 @@
 
 FROM node:current-alpine3.16
 
+# Read the environment variable from the docker-compose file
+ARG VITE_APP_API_URL
+ARG VITE_MATOMO_URL
+ARG VITE_MATOMO_SITE
+
 COPY ./ /app
 COPY .eslintrc*.js /
 

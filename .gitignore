@@ -51,3 +51,4 @@ docs/.vitepress/cache
 
 backend/.env
 frontend/.env
+.env
