@@ -48,8 +48,37 @@ services:
     depends_on:
       - backend
 
+  matomo-db:
+    image: mariadb:11.4.4
+    environment:
+      - MYSQL_ROOT_PASSWORD=matomo
+      - MYSQL_DATABASE=matomo
+      - MYSQL_USER=matomo 
+      - MYSQL_PASSWORD=matomo
+    volumes:
+      - matomo_db:/var/lib/mysql
+
+  matomo:
+    image: matomo:5.2.2
+    ports:
+      - "7000:80"
+    environment:
+      - MATOMO_DATABASE_HOST=matomo-db
+      - MATOMO_DATABASE_TABLES_PREFIX=matomo_
+      - MATOMO_DATABASE_USERNAME=matomo
+      - MATOMO_DATABASE_PASSWORD=matomo
+      - MATOMO_DATABASE_DBNAME=matomo
+    volumes:
+      - matomo_data:/var/www/html
+    depends_on:
+      - matomo-db
+
 volumes:
   mongodb_data:
     name: mongodb_data
   uploads_data:
     name: uploads_data
+  matomo_db:
+    name: matomo_db
+  matomo_data:
+    name: matomo_data
