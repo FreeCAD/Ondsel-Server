@@ -24,4 +24,4 @@ ENV NODE_ENV production
 
 EXPOSE 3030
 
-CMD [ "npm", "run", "start" ]
+CMD [ "sh", "./entry.sh" ]

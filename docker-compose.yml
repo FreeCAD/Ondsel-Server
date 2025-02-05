@@ -7,7 +7,9 @@ services:
       - mongodb_data:/data/db
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "3030:3030"
     environment:
@@ -16,10 +18,10 @@ services:
       - DB_URL=mongodb://mongodb:27017/backend-db
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - FC_WORKER_URL=http://localhost:8080/2015-03-31/functions/function/invocations
-      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_HOST=${SMTP_HOST:-}
       - SMTP_PORT=${SMTP_PORT:-465}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
       - AWS_CLIENT_MODELS_BUCKET=${AWS_CLIENT_MODELS_BUCKET:-}
@@ -32,6 +34,7 @@ services:
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile
       args:
         - VITE_APP_API_URL=${VITE_APP_API_URL:-http://localhost:3030/}
         - VITE_MATOMO_URL=${VITE_MATOMO_URL:-http://localhost:7000}
@@ -42,7 +45,9 @@ services:
       - backend
 
   fc-worker:
-    build: ./FC-Worker
+    build:
+      context: ./FC-Worker
+      dockerfile: Dockerfile
     environment:
       - BACKEND_URL=${BACKEND_URL:-http://localhost:3030}
     network_mode: "service:backend"
@@ -50,6 +55,8 @@ services:
       - backend
 
   matomo-db:
+    profiles:
+      - matomo-enabled
     image: mariadb:11.4.4
     environment:
       - MYSQL_ROOT_PASSWORD=matomo
@@ -60,6 +67,8 @@ services:
       - matomo_db:/var/lib/mysql
 
   matomo:
+    profiles:
+      - matomo-enabled
     image: matomo:5.2.2
     ports:
       - "7000:80"

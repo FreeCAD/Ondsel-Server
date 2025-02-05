@@ -6,15 +6,56 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Ondsel-Server
 
-## Prerequisite
+## Getting Started
 
-- Install MongoDB (https://www.mongodb.com/docs/manual/installation/).
-- Install NodeJS (https://nodejs.org/en/download)
-- Install Docker (https://docs.docker.com/engine/install/)
+### Clone the repository with submodules
+
+```bash
+git clone --recurse-submodules https://github.com/Ondsel-Development/Ondsel-Server.git
+cd Ondsel-Server
+```
 
 ## Installation
 
-### Running frontend
+You can install Ondsel-Server in two ways:
+1. Using docker-compose (Recommended, only requires Docker)
+2. Manual installation (Requires all dependencies)
+
+### Prerequisites for docker-compose
+- Install Docker (https://docs.docker.com/engine/install/)
+
+### Prerequisites for manual installation
+- Install MongoDB (https://www.mongodb.com/docs/manual/installation/)
+- Install NodeJS (https://nodejs.org/en/download)
+- Install Docker (needed for FC-Worker)
+
+### Using docker-compose (Recommended)
+
+This is the easiest way to run the entire application stack.
+
+#### Create environment file:
+```bash
+cp env.example .env
+```
+
+#### Start the server:
+```bash
+# With analytics (recommended):
+docker-compose --profile matomo-enabled up -d
+
+# Without analytics:
+docker-compose up -d
+
+# Rebuild the frontend on env change:
+docker-compose build --no-cache frontend
+```
+
+That's it! The application should now be running at http://localhost:3000
+
+
+### Manual Installation
+
+#### Running frontend
 
 - Go to the `frontend` directory
 - Rename `env.example` to `.env` (Or export variables)
@@ -42,7 +83,7 @@ and run (or re-run) with:
 sudo docker run --env-file .env -p 80:80 --rm --name frontend frontend:latest
 ```
 
-### Running backend
+#### Running backend
 
 - Go to the `backend` directory
 - Rename `env.example` to `.env` (Or export variables)
@@ -57,7 +98,7 @@ $ npm ci
 $ npm run dev
 ```
 
-### Running FC-Worker
+#### Running FC-Worker
 
 - Clone [FC-Woker](https://github.com/Ondsel-Development/FC-Worker) repository.
 - Build docker image (`docker build -t fc-worker .`)
