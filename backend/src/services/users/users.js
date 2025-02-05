@@ -289,6 +289,11 @@ const createSampleModels = async (context) => {
 
 const sendVerify = () => {
   return async (context) => {
+    // Temporary disable email verification for creating default admin user
+    if (process.env.DISABLE_SEND_VERIFICATION_EMAIL) {
+      return context;
+    }
+
     const notifierInst = notifier(context.app);
 
     const users = Array.isArray(context.result)
