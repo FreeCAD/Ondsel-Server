@@ -47,6 +47,7 @@ import {updateSharedModelsWithTitleCommand} from "./update-sharedmodels-with-tit
 import {updateDirectoriesWithTitleCommand} from "./update-directories-with-titles.command.js";
 import {handleStepFileAsModelCommand} from "./handle-step-file-as-model.js";
 import {fixedSharedWithMeSchemasCommand} from "./fixed-shared-with-me-schemas.command.js";
+import {addDefaultAdminUserCommand} from "./create-default-admin-user.command.js";
 
 
 async function runMigration() {
@@ -181,6 +182,9 @@ async function runMigration() {
       break;
     case 'fixedSharedWithMeSchemas':
       await fixedSharedWithMeSchemasCommand(app);
+      break;
+    case 'addDefaultAdminUser':
+      await addDefaultAdminUserCommand(app);
       break;
     default:
       console.error('Please specify the migration command.')
