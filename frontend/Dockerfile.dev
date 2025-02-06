@@ -6,8 +6,17 @@ FROM node:lts-alpine3.17
 
 WORKDIR /app
 
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Set development environment
 ENV NODE_ENV development
 
+# Expose development port
 EXPOSE 3000
 
+# Start development server
 CMD [ "npm", "run", "dev", "--", "--host", "0.0.0.0" ]

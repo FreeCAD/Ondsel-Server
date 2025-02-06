@@ -6,4 +6,8 @@ npm run migration updateTos2023Aug31
 npm run migration addDefaultAdminUser
 
 # Start the application
-npm run start
+if [ "$NODE_ENV" = "development" ]; then
+  npm run dev
+else
+  npm run start
+fi

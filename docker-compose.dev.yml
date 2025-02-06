@@ -1,0 +1,99 @@
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "${EXPOSE_DB_PORT:-27017}:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3030:3030"
+    environment:
+      - HOSTNAME=${HOSTNAME:-localhost}
+      - PORT=${PORT:-3030}
+      - DB_URL=mongodb://mongodb:27017/backend-db
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - FC_WORKER_URL=http://localhost:8080/2015-03-31/functions/function/invocations
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-465}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_CLIENT_MODELS_BUCKET=${AWS_CLIENT_MODELS_BUCKET:-}
+      - AWS_REGION=${AWS_REGION:-}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - uploads_data:/app/uploads
+    depends_on:
+      - mongodb
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_APP_API_URL=${VITE_APP_API_URL:-http://localhost:3030/}
+      - VITE_MATOMO_URL=${VITE_MATOMO_URL:-http://localhost:7000}
+      - VITE_MATOMO_SITE=${VITE_MATOMO_SITE:-1}
+    depends_on:
+      - backend
+
+  fc-worker:
+    build:
+      context: ./FC-Worker
+      dockerfile: Dockerfile
+    environment:
+      - BACKEND_URL=${BACKEND_URL:-http://localhost:3030}
+    network_mode: "service:backend"
+    depends_on:
+      - backend
+
+  matomo-db:
+    profiles:
+      - matomo-enabled
+    image: mariadb:11.4.4
+    environment:
+      - MYSQL_ROOT_PASSWORD=matomo
+      - MYSQL_DATABASE=matomo
+      - MYSQL_USER=matomo 
+      - MYSQL_PASSWORD=matomo
+    volumes:
+      - matomo_db:/var/lib/mysql
+
+  matomo:
+    profiles:
+      - matomo-enabled
+    image: matomo:5.2.2
+    ports:
+      - "7000:80"
+    environment:
+      - MATOMO_DATABASE_HOST=matomo-db
+      - MATOMO_DATABASE_TABLES_PREFIX=matomo_
+      - MATOMO_DATABASE_USERNAME=matomo
+      - MATOMO_DATABASE_PASSWORD=matomo
+      - MATOMO_DATABASE_DBNAME=matomo
+    volumes:
+      - matomo_data:/var/www/html
+    depends_on:
+      - matomo-db
+
+volumes:
+  mongodb_data:
+    name: mongodb_data_dev
+  uploads_data:
+    name: uploads_data_dev
+  matomo_db:
+    name: matomo_db_dev
+  matomo_data:
+    name: matomo_data_dev

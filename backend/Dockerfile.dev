@@ -17,10 +17,20 @@ echo "source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
 
 WORKDIR /app
 
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy default uploads directory
+COPY uploads/ondsel* ./uploads/
+COPY uploads/public/ondsel* ./uploads/public/
+
 ENV NODE_ENV development
 
 EXPOSE 3030
 # Attach to node process debug port
 EXPOSE 9229
 
-CMD [ "npm", "run", "debug" ]
+CMD [ "sh", "./entry.sh" ]

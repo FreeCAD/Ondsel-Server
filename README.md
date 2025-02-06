@@ -48,6 +48,9 @@ docker-compose up -d
 
 # Rebuild the frontend on env change:
 docker-compose build --no-cache frontend
+
+# For development:
+docker-compose -f docker-compose.dev.yml --profile matomo-enabled up -d
 ```
 
 That's it! The application should now be running at http://localhost:3000
