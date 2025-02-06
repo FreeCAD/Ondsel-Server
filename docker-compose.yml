@@ -7,6 +7,7 @@ services:
       - mongodb_data:/data/db
 
   backend:
+    image: ondsel-server-backend
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -32,6 +33,7 @@ services:
       - mongodb
 
   frontend:
+    image: ondsel-server-frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
