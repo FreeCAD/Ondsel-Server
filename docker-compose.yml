@@ -60,6 +60,7 @@ services:
     profiles:
       - matomo-enabled
     image: mariadb:11.4.4
+    command: --max-allowed-packet=128M
     environment:
       - MYSQL_ROOT_PASSWORD=matomo
       - MYSQL_DATABASE=matomo
@@ -71,17 +72,22 @@ services:
   matomo:
     profiles:
       - matomo-enabled
-    image: matomo:5.2.2
+    image: docker.io/bitnami/matomo:5
     ports:
-      - "7000:80"
+      - "7000:8080"
     environment:
       - MATOMO_DATABASE_HOST=matomo-db
-      - MATOMO_DATABASE_TABLES_PREFIX=matomo_
-      - MATOMO_DATABASE_USERNAME=matomo
+      - MATOMO_DATABASE_TABLE_PREFIX=matomo_
+      - MATOMO_DATABASE_USER=matomo
       - MATOMO_DATABASE_PASSWORD=matomo
-      - MATOMO_DATABASE_DBNAME=matomo
+      - MATOMO_DATABASE_NAME=matomo
+      - MATOMO_WEBSITE_NAME=Ondsel LENS
+      - MATOMO_WEBSITE_HOST=${FRONTEND_URL:-http://localhost:3000}
+      - MATOMO_USERNAME=${MATOMO_USERNAME:-admin}
+      - MATOMO_PASSWORD=${MATOMO_PASSWORD:-admin@ondsel.com}
+      - MATOMO_EMAIL=${MATOMO_EMAIL:-admin@ondsel.com}
     volumes:
-      - matomo_data:/var/www/html
+      - matomo_data:/bitnami/matomo"
     depends_on:
       - matomo-db
 
