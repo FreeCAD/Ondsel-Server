@@ -41,19 +41,36 @@ cp env.example .env
 #### Start the server:
 ```bash
 # With analytics (recommended):
-docker-compose --profile matomo-enabled up -d
+docker-compose --profile matomo-enabled up --build -d
 
 # Without analytics:
-docker-compose up -d
+docker-compose up --build -d
 
 # Rebuild the frontend on env change:
 docker-compose build --no-cache frontend
 
 # For development:
-docker-compose -f docker-compose.dev.yml --profile matomo-enabled up -d
+docker-compose -f docker-compose.dev.yml --profile matomo-enabled up --build -d
 ```
 
 That's it! The application should now be running at http://localhost:3000
+
+#### Default Credentials
+
+##### Matomo Analytics
+- URL: http://localhost:7000
+- Username: admin
+- Email: admin@local.test
+- Password: admin@local.test
+
+##### Frontend Application
+- URL: http://localhost:3000
+- Email: admin@local.test
+- Password: admin@local.test
+
+These credentials can be customized using environment variables in the `.env` file.
+
+**Note:** For production environments, it's strongly recommended to change these default credentials using environment variables.
 
 
 ### Manual Installation
