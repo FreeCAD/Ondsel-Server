@@ -2,7 +2,7 @@ services:
   mongodb:
     image: mongo:latest
     ports:
-      - "${EXPOSE_DB_PORT:-}:27017"
+      - "${EXPOSE_DB_PORT:-27018}:27017"
     volumes:
       - mongodb_data:/data/db
 
@@ -19,14 +19,18 @@ services:
       - DB_URL=mongodb://mongodb:27017/backend-db
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - FC_WORKER_URL=http://localhost:8080/2015-03-31/functions/function/invocations
-      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_HOST
       - SMTP_PORT=${SMTP_PORT:-465}
-      - SMTP_USER=${SMTP_USER:-}
-      - SMTP_PASS=${SMTP_PASS:-}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
-      - AWS_CLIENT_MODELS_BUCKET=${AWS_CLIENT_MODELS_BUCKET:-}
-      - AWS_REGION=${AWS_REGION:-}
+      - SMTP_USER
+      - SMTP_PASS
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_CLIENT_MODELS_BUCKET
+      - AWS_REGION
+      - DEFAULT_ADMIN_EMAIL
+      - DEFAULT_ADMIN_USERNAME
+      - DEFAULT_ADMIN_PASSWORD
+      - DEFAULT_ADMIN_NAME
     volumes:
       - uploads_data:/app/uploads
     depends_on:
@@ -84,8 +88,8 @@ services:
       - MATOMO_WEBSITE_NAME=Ondsel LENS
       - MATOMO_WEBSITE_HOST=${FRONTEND_URL:-http://localhost:3000}
       - MATOMO_USERNAME=${MATOMO_USERNAME:-admin}
-      - MATOMO_PASSWORD=${MATOMO_PASSWORD:-admin@ondsel.com}
-      - MATOMO_EMAIL=${MATOMO_EMAIL:-admin@ondsel.com}
+      - MATOMO_PASSWORD=${MATOMO_PASSWORD:-admin@local.test}
+      - MATOMO_EMAIL=${MATOMO_EMAIL:-admin@local.test}
     volumes:
       - matomo_data:/bitnami/matomo"
     depends_on:
