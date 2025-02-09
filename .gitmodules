@@ -1,0 +1,3 @@
+[submodule "FC-Worker"]
+	path = FC-Worker
+	url = https://github.com/FreeCAD/FC-Worker.git
