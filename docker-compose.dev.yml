@@ -4,7 +4,7 @@
 
 services:
   mongodb:
-    image: mongo:latest
+    image: mongo:7.0
     ports:
       - "${EXPOSE_DB_PORT:-27018}:27017"
     volumes:
