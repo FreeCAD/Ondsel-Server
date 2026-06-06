@@ -40,7 +40,7 @@
     "dev": "nodemon src/",
     "debug": "nodemon --exec \"node --inspect=9229\" src/",
     "prettier": "npx prettier \"**/*.js\" --write",
-    "mocha": "cross-env NODE_ENV=test mocha test/ --recursive --exit",
+    "mocha": "cross-env NODE_ENV=test PORT=8998 DB_URL=mongodb://mongodb:27017/backend-db-test mocha test/ --recursive --exit --timeout 10000",
     "test": "npm run mocha",
     "bundle:client": "npm pack --pack-destination ./public",
     "migration": "node src/migrations/run-migration.js"
