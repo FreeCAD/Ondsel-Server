@@ -18,29 +18,34 @@ cd Lens
 ## Installation
 
 You can install Lens in two ways:
+
 1. Using docker-compose (Recommended, only requires Docker)
 2. Manual installation (Requires all dependencies)
 
 ### Prerequisites for docker-compose
-- Install Docker (https://docs.docker.com/engine/install/)
+
+- [Install Docker](https://docs.docker.com/engine/install/)
 
 ### Prerequisites for manual installation
-- Install MongoDB (https://www.mongodb.com/docs/manual/installation/)
-- Install NodeJS (https://nodejs.org/en/download)
-- Install Docker (needed for FC-Worker)
+
+- [Install MongoDB](https://www.mongodb.com/docs/manual/installation/)
+- [Install NodeJS](https://nodejs.org/en/download)
+- [Install Docker](https://docs.docker.com/engine/install/) (needed for FC-Worker)
 
 ### Using docker-compose (Recommended)
 
 This is the easiest way to run the entire application stack.
 
-#### Create environment file:
+#### Create environment file
+
 ```bash
 cp env.example .env
 # or for using AWS S3 for storage:
 cp env.with-aws.example .env
 ```
 
-#### Start the server:
+#### Start the server
+
 ```bash
 # With analytics (recommended):
 docker-compose --profile matomo-enabled up --build -d
@@ -67,32 +72,34 @@ docker-compose -f docker-compose.dev.yml exec backend npm run migration seedDevK
 docker-compose -f docker-compose.dev.yml restart backend
 ```
 
-That's it! The application should now be running at http://localhost:3000
+That's it! The application should now be running at <http://localhost:3000>
 
 #### Default Credentials
 
 ##### Matomo Analytics
-- URL: http://localhost:7000
+
+- URL: <http://localhost:7000>
 - Username: admin
-- Email: admin@local.test
-- Password: admin@local.test
+- Email: <admin@local.test>
+- Password: <admin@local.test>
 
 ##### Frontend Application
-- URL: http://localhost:3000
-- Email: admin@local.test
-- Password: admin@local.test
+
+- URL: <http://localhost:3000>
+- Email: <admin@local.test>
+- Password: <admin@local.test>
 
 ##### Keycloak (local OIDC)
-- URL: http://localhost:8090
+
+- URL: <http://localhost:8090>
 - Admin username: admin
-- Admin password: admin@local.test
-- Test user email: admin@local.test
-- Test user password: admin@local.test
+- Admin password: <admin@local.test>
+- Test user email: <admin@local.test>
+- Test user password: <admin@local.test>
 
 These credentials can be customized using environment variables in the `.env` file.
 
 **Note:** For production environments, it's strongly recommended to change these default credentials using environment variables.
-
 
 ### Manual Installation
 
@@ -110,11 +117,11 @@ These credentials can be customized using environment variables in the `.env` fi
 - Finally, run server `npm run dev`
 
 ```bash
-$ cd frontend
-$ mv env.example .env
-$ set -a; . ./.env; set +a
-$ npm ci
-$ npm run dev
+cd frontend
+mv env.example .env
+set -a; . ./.env; set +a
+npm ci
+npm run dev
 ```
 
 To run from Docker, recompile with:
@@ -152,10 +159,10 @@ npm run dev -- --host 0.0.0.0
 - Finally, run server `npm run dev`
 
 ```bash
-$ cd backend
-$ mv env.example .env # or `mv env.with-aws.example .env` for using AWS S3 for storage
-$ set -a; . ./.env; set +a
-$ npm ci
+cd backend
+mv env.example .env # or `mv env.with-aws.example .env` for using AWS S3 for storage
+set -a; . ./.env; set +a
+npm ci
 ```
 
 ##### Running Migrations
@@ -184,9 +191,9 @@ The FC-Worker is a submodule and has its own [repository](https://github.com/Fre
 - Run the docker image (`docker-compose up -d`)
 
 ```bash
-$ cd FC-Worker
-$ docker-compose build
-$ docker-compose up -d
+cd FC-Worker
+docker-compose build
+docker-compose up -d
 ```
 
 Check if it works:
@@ -220,7 +227,6 @@ Additional documentation is available in the [`docs/`](docs/) directory:
 <!--     - Backend API: https://lens-api.example.com/ -->
 <!--     - API docs: https://lens-api.example.com/docs/ -->
 
-
 <!-- ## Deployment -->
 
 <!-- ## Deployment to PROD -->
@@ -247,7 +253,6 @@ Additional documentation is available in the [`docs/`](docs/) directory:
 <!--     1. Click on `Upload and deploy` button. -->
 <!--     1. This will open a dialog to upload ZIP. -->
 <!--     1. Upload `od-frontend.zip` file and in Version label put commit hash (i.e  `d7fb86244117efb679edd0bb41bedf230cb2fc19`) -->
-
 
 <!-- ## Running migration on PROD -->
 
