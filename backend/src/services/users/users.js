@@ -51,6 +51,18 @@ export * from './users.class.js'
 export * from './users.schema.js'
 
 
+const checkRegistrationOpen = async (context) => {
+  // Internal calls (migrations, admin creating users) bypass this check
+  if (context.params.provider === undefined) return context;
+  const siteConfigService = context.app.service('site-config');
+  const siteConfig = await siteConfigService.get(siteConfigId);
+  if (siteConfig.registrationOpen === false) {
+    throw new BadRequest('Registration is currently closed.');
+  }
+  return context;
+};
+
+
 // A configure function that registers the service and its hooks via `app.configure`
 export const user = (app) => {
   // Register our service on the Feathers application
@@ -175,6 +187,7 @@ export const user = (app) => {
         detectUsernameInId
       ],
       create: [
+        checkRegistrationOpen,
         validateOAuthCompletionData,
         schemaHooks.validateData(userDataValidator),
         schemaHooks.resolveData(userDataResolver),

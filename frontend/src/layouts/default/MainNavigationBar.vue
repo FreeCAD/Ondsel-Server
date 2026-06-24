@@ -169,7 +169,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               Login
             </v-btn>
           </template>
-          <template v-if="currentRouteName !== 'SignUp'">
+          <template v-if="currentRouteName !== 'SignUp' && siteConfig?.registrationOpen !== false">
             <v-btn
               variant="tonal"
               color="primary"

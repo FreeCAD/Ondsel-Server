@@ -124,7 +124,9 @@ export async function createDefaultSiteConfigCommand(app) {
       defaultModel: false,
       desktopApp: false,
       oauth: false,
-    }
+      registrationOpen: true,
+    },
+    registrationOpen: true,
   };
 
   // Insert the default site config
