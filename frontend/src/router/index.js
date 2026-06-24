@@ -57,7 +57,7 @@ import XavierBrandingHomepage from "@/views/XavierBrandingHomepage.vue";
 import XavierBrandingDefaultModel from "@/views/XavierBrandingDefaultModel.vue";
 import XavierOAuthConfig from "@/views/XavierOAuthConfig.vue";
 import XavierRegistrationConfig from "@/views/XavierRegistrationConfig.vue";
-
+import SignUpDisabled from "@/views/SignUpDisabled.vue";
 
 const isWindowLoadedInIframe = () => {
   try {
@@ -89,9 +89,23 @@ const routes = [
       await store.dispatch('app/loadSiteConfig');
       const siteConfig = store.getters['app/siteConfig'];
       if (siteConfig?.registrationOpen === false) {
-        next({ name: 'Login' });
+        next({ name: 'SignUpDisabled' });
       } else {
         next();
+      }
+    },
+  },
+  {
+    path: '/signup-disabled',
+    component: SignUpDisabled,
+    name: 'SignUpDisabled',
+    beforeEnter: async (to, from, next) => {
+      await store.dispatch('app/loadSiteConfig');
+      const siteConfig = store.getters['app/siteConfig'];
+      if (siteConfig?.registrationOpen === false) {
+        next();
+      } else {
+        next({ name: 'SignUp' });
       }
     },
   },
