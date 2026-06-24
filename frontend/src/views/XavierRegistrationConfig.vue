@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <v-card-text>
               <p class="text-caption text-grey-darken-1 mb-4">
                 When disabled, new users cannot sign up. Existing users can
-                still log in. You can still create users manually via the API.
+                still log in. You can still create users manually below.
               </p>
               <v-progress-circular
                 v-if="isLoading"
@@ -44,6 +44,75 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 :disabled="isSaving"
               ></v-switch>
             </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12">
+          <v-card class="ma-2" elevation="1">
+            <v-card-title>Create User Manually</v-card-title>
+            <v-card-text>
+              <p class="text-caption text-grey-darken-1 mb-4">
+                Create a new user account directly, bypassing registration
+                settings.
+              </p>
+              <v-form ref="createUserForm" v-model="createUserValid">
+                <v-text-field
+                  v-model="newUser.name"
+                  label="Display Name"
+                  :rules="[(v) => !!v || 'Name is required']"
+                  :disabled="isCreatingUser"
+                  type="text"
+                  class="mb-2"
+                ></v-text-field>
+                <v-text-field
+                  v-model="newUser.username"
+                  label="Username"
+                  :rules="[
+                    (v) => !!v || 'Username is required',
+                    (v) =>
+                      /^[a-zA-Z0-9_-]+$/.test(v) ||
+                      'Only letters, numbers, dashes and underscores',
+                  ]"
+                  :disabled="isCreatingUser"
+                  type="text"
+                  class="mb-2"
+                ></v-text-field>
+                <v-text-field
+                  v-model="newUser.email"
+                  label="Email"
+                  :rules="[
+                    (v) => !!v || 'Email is required',
+                    (v) => /.+@.+\..+/.test(v) || 'Must be a valid email',
+                  ]"
+                  :disabled="isCreatingUser"
+                  type="email"
+                  class="mb-2"
+                ></v-text-field>
+                <v-text-field
+                  v-model="newUser.password"
+                  label="Password"
+                  :rules="[
+                    (v) => !!v || 'Password is required',
+                    (v) => v.length >= 8 || 'Minimum 8 characters',
+                  ]"
+                  :disabled="isCreatingUser"
+                  type="password"
+                  class="mb-2"
+                ></v-text-field>
+              </v-form>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn
+                color="primary"
+                variant="elevated"
+                :disabled="!createUserValid || isCreatingUser"
+                :loading="isCreatingUser"
+                @click="createUser"
+              >
+                Create User
+              </v-btn>
+            </v-card-actions>
           </v-card>
         </v-col>
       </v-row>
@@ -80,6 +149,14 @@ export default {
       registrationOpen: true,
       isLoading: true,
       isSaving: false,
+      createUserValid: false,
+      isCreatingUser: false,
+      newUser: {
+        name: "",
+        username: "",
+        email: "",
+        password: "",
+      },
       showSnackbar: false,
       snackbarMessage: "",
       snackbarColor: "success",
@@ -117,6 +194,31 @@ export default {
         );
       } finally {
         this.isSaving = false;
+      }
+    },
+    async createUser() {
+      const { valid } = await this.$refs.createUserForm.validate();
+      if (!valid) return;
+      this.isCreatingUser = true;
+      try {
+        await models.api.User.create({
+          name: this.newUser.name.trim(),
+          username: this.newUser.username.trim(),
+          email: this.newUser.email.trim(),
+          password: this.newUser.password,
+          usageType: 'both',  // add this
+        });
+        this.showMessage(
+          `User ${this.newUser.email} created successfully`,
+          "success"
+        );
+        this.newUser = { name: "", username: "", email: "", password: "" };
+        this.$refs.createUserForm.reset();
+      } catch (error) {
+        console.error("Failed to create user:", error);
+        this.showMessage(error.message || "Failed to create user", "error");
+      } finally {
+        this.isCreatingUser = false;
       }
     },
     showMessage(message, color) {
