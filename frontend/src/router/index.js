@@ -45,7 +45,7 @@ import XavierUpdateKeyDocuments from "@/views/XavierUpdateKeyDocuments.vue";
 import Bookmarks from "@/views/Bookmarks.vue";
 import Macros from "@/views/Macros.vue";
 import XavierSearchResults from "@/views/XavierSearchResults.vue";
-import XavierRemoveUser from "@/views/XavierRemoveUser.vue";
+import XavierManageUsers from "@/views/XavierManageUsers.vue";
 import SharedWithMe from "@/views/SharedWithMe.vue";
 import MyNotifications from "@/views/MyNotifications.vue";
 import WorkspaceFile from "@/views/WorkspaceFile.vue";
@@ -291,8 +291,8 @@ const routes = [
   },
   {
     path: '/xavier-55554337898',
-    component: XavierRemoveUser,
-    name: 'XavierRemoveUser',
+    component: XavierManageUsers,
+    name: 'XavierManageUsers',
     meta: { requiresAuth: true },
   },
   {
