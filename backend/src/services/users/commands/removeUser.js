@@ -15,6 +15,19 @@ import { siteConfigId } from '../../site-config/site-config.schema.js'
 
 export const REDACTED = '<REDACTED>'
 
+/**
+ * Attempt to delete an upload file, silently ignoring errors
+ * (file may already be missing or never have been generated)
+ */
+const safeRemoveUpload = async (uploadService, key, log) => {
+  try {
+    await uploadService.remove(encodeURIComponent(key))
+    log.push(`deleted upload file: ${key}`)
+  } catch (e) {
+    log.push(`could not delete upload file (may not exist): ${key}`)
+  }
+}
+
 export const removeUser = async (context) => {
   //
   // gather data
@@ -25,6 +38,8 @@ export const removeUser = async (context) => {
   const dirService = context.app.service('directories')
   const keywordService = context.app.service('keywords')
   const fileService = context.app.service('file')
+  const uploadService = context.app.service('upload')
+  const modelService = context.app.service('models')
   const originalUserId = context.id
   const [trueId, pin] = originalUserId.split('z')
   let user = await context.service.get(trueId)
@@ -122,12 +137,51 @@ export const removeUser = async (context) => {
   log.push(`redacted ${userResult.modifiedCount} users`)
 
   //
-  // remove all files, directories, and workspaces
+  // delete upload files and DB records for the default model file
   //
   if (deleteDefaultModelFile) {
-    const fileResult = await fileService.remove(deleteDefaultModelFile)
-    log.push(`deleted ${fileResult._id} default ${siteConfig.defaultModel.fileName} file`)
+    // Load the file document to get all version uniqueFileNames
+    try {
+      const fileDoc = await fileService.get(deleteDefaultModelFile)
+
+      // Delete all version upload files
+      for (const version of fileDoc.versions || []) {
+        if (version.uniqueFileName) {
+          await safeRemoveUpload(uploadService, version.uniqueFileName, log)
+
+          // Delete generated files associated with this version
+          const base = version.uniqueFileName.replace(/\.[^.]+$/, '')
+          await safeRemoveUpload(uploadService, `${base}_generated.OBJ`, log)
+          await safeRemoveUpload(uploadService, `${base}_generated.BREP`, log)
+          await safeRemoveUpload(uploadService, `${base}_generated.FCSTD`, log)
+        }
+      }
+
+      // Delete model-level generated files (thumbnail etc.) using modelId
+      if (fileDoc.modelId) {
+        const modelIdStr = fileDoc.modelId.toString()
+        await safeRemoveUpload(uploadService, `public/${modelIdStr}_thumbnail.PNG`, log)
+        await safeRemoveUpload(uploadService, `${modelIdStr}_generated.OBJ`, log)
+        await safeRemoveUpload(uploadService, `${modelIdStr}_generated.BREP`, log)
+        await safeRemoveUpload(uploadService, `${modelIdStr}_generated.FCSTD`, log)
+
+        // Mark model as deleted in DB
+        try {
+          await modelService.patch(fileDoc.modelId, { deleted: true })
+          log.push(`marked model ${modelIdStr} as deleted`)
+        } catch (e) {
+          log.push(`could not mark model ${modelIdStr} as deleted: ${e.message}`)
+        }
+      }
+
+      // Remove the file DB record
+      const fileResult = await fileService.remove(deleteDefaultModelFile)
+      log.push(`deleted ${fileResult._id} default ${siteConfig.defaultModel.fileName} file`)
+    } catch (e) {
+      log.push(`error deleting default model file ${deleteDefaultModelFile}: ${e.message}`)
+    }
   }
+
   // dirService.remove(rootDirId) DOES NOT work as it forbids removing root '/'.
   if (rootDir) {
     const dirDb = await dirService.options.Model
