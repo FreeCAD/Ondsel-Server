@@ -17,15 +17,25 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <b><i>Professor Xavier's School For The Hidden</i></b>
     </v-card-subtitle>
     <v-card-text>
-      <v-text-field
-        v-model="search"
-        prepend-inner-icon="mdi-magnify"
-        label="Search users..."
-        variant="outlined"
-        density="compact"
-        clearable
-        class="mb-4"
-      ></v-text-field>
+      <div class="d-flex align-center ga-4 mb-4">
+        <v-text-field
+          v-model="search"
+          prepend-inner-icon="mdi-magnify"
+          label="Search users..."
+          variant="outlined"
+          density="compact"
+          clearable
+          hide-details
+          class="flex-grow-1"
+        ></v-text-field>
+        <v-switch
+          v-model="showRedacted"
+          label="Show redacted users"
+          density="compact"
+          hide-details
+          color="warning"
+        ></v-switch>
+      </div>
 
       <v-progress-linear
         v-if="isLoading"
@@ -40,15 +50,36 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <th>Name</th>
             <th>Username</th>
             <th>Email</th>
+            <th>Organizations</th>
             <th class="text-center">Admin</th>
             <th class="text-center">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="u in filteredUsers" :key="u._id">
+          <tr
+            v-for="u in filteredUsers"
+            :key="u._id"
+            :class="{ 'text-grey': isRedacted(u) }"
+          >
             <td>{{ u.name }}</td>
             <td>{{ u.username }}</td>
             <td>{{ u.email }}</td>
+            <td>
+              <v-chip
+                v-for="org in nonPersonalOrgs(u)"
+                :key="org._id"
+                size="small"
+                class="ma-1"
+                :color="org.type === 'Admin' ? 'warning' : 'default'"
+              >
+                {{ org.name }}
+              </v-chip>
+              <span
+                v-if="nonPersonalOrgs(u).length === 0"
+                class="text-grey text-caption"
+                >—</span
+              >
+            </td>
             <td class="text-center">
               <v-switch
                 :model-value="isUserAdmin(u)"
@@ -56,7 +87,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 density="compact"
                 hide-details
                 class="d-flex justify-center"
-                :disabled="pendingUserId === u._id || u._id === currentUser._id"
+                :disabled="
+                  pendingUserId === u._id ||
+                  u._id === currentUser._id ||
+                  isRedacted(u)
+                "
                 @update:model-value="toggleAdmin(u, $event)"
               ></v-switch>
             </td>
@@ -66,13 +101,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 color="error"
                 variant="text"
                 size="small"
-                :disabled="pendingUserId === u._id || u._id === currentUser._id"
+                :disabled="
+                  pendingUserId === u._id ||
+                  u._id === currentUser._id ||
+                  isRedacted(u)
+                "
                 @click="confirmDelete(u)"
               ></v-btn>
             </td>
           </tr>
           <tr v-if="filteredUsers.length === 0">
-            <td colspan="5" class="text-center text-grey pa-4">
+            <td colspan="6" class="text-center text-grey pa-4">
               No users found.
             </td>
           </tr>
@@ -86,9 +125,27 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <v-card>
       <v-card-title class="text-error">Delete User</v-card-title>
       <v-card-text>
-        Are you sure you want to delete <b>{{ userToDelete?.name }}</b> ({{
-          userToDelete?.email
-        }})? This action is <b>not reversible</b>.
+        <p>
+          Are you sure you want to delete <b>{{ userToDelete?.name }}</b> ({{
+            userToDelete?.email
+          }})? This action is <b>not reversible</b>.
+        </p>
+        <v-alert
+          v-if="nonPersonalOrgs(userToDelete).length > 0"
+          type="warning"
+          class="mt-3"
+          density="compact"
+        >
+          This user belongs to
+          {{ nonPersonalOrgs(userToDelete).length }} non-personal
+          organization(s):
+          <b>{{
+            nonPersonalOrgs(userToDelete)
+              .map((o) => o.name)
+              .join(", ")
+          }}</b
+          >. Remove them from these organizations first or deletion may fail.
+        </v-alert>
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
@@ -104,7 +161,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     </v-card>
   </v-dialog>
 
-  <v-snackbar v-model="showSnackbar" :timeout="4000" :color="snackbarColor">
+  <v-snackbar
+    v-model="showSnackbar"
+    :timeout="5000"
+    :color="snackbarColor"
+    multi-line
+  >
     {{ snackbarMessage }}
   </v-snackbar>
 </template>
@@ -116,6 +178,8 @@ import { crc32 } from "@/refNameFunctions";
 
 const { User, Organization } = models.api;
 
+const REDACTED = "<REDACTED>";
+
 export default {
   name: "XavierManageUsers",
   data() {
@@ -124,6 +188,7 @@ export default {
       adminOrg: null,
       isLoading: true,
       search: "",
+      showRedacted: false,
       pendingUserId: null,
       deleteDialog: false,
       userToDelete: null,
@@ -139,9 +204,12 @@ export default {
       return this.user || {};
     },
     filteredUsers() {
-      if (!this.search) return this.users;
+      let list = this.showRedacted
+        ? this.users
+        : this.users.filter((u) => !this.isRedacted(u));
+      if (!this.search) return list;
       const q = this.search.toLowerCase();
-      return this.users.filter(
+      return list.filter(
         (u) =>
           u.name?.toLowerCase().includes(q) ||
           u.username?.toLowerCase().includes(q) ||
@@ -175,6 +243,14 @@ export default {
         this.isLoading = false;
       }
     },
+    isRedacted(u) {
+      if (!u) return false;
+      return u.name === REDACTED || u.email === REDACTED;
+    },
+    nonPersonalOrgs(u) {
+      if (!u?.organizations) return [];
+      return u.organizations.filter((o) => o.type !== "Personal");
+    },
     isUserAdmin(u) {
       if (!this.adminOrg?.users) return false;
       const orgUser = this.adminOrg.users.find(
@@ -203,6 +279,10 @@ export default {
         } else {
           await Organization.patch(this.adminOrg._id, {
             shouldRevokeAdminAccessFromUsersOfOrganization: true,
+            userIds: [u._id.toString()],
+          });
+          await Organization.patch(this.adminOrg._id, {
+            shouldRemoveUsersFromOrganization: true,
             userIds: [u._id.toString()],
           });
           this.showMessage(`${u.name} is no longer an admin`, "success");
