@@ -139,7 +139,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <p>
           Are you sure you want to delete <b>{{ userToDelete?.name }}</b> ({{
             userToDelete?.email
-          }})? This action is <b>not reversible</b>.
+          }})? This action will delete the user's files and mark their account as redacted.
+          <b>This action is not reversible</b>.
         </p>
         <v-alert
           v-if="nonPersonalOrgs(userToDelete).length > 0"
