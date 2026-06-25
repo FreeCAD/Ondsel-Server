@@ -117,6 +117,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           </tr>
         </tbody>
       </v-table>
+      <div v-if="showRedacted && redactedCount > 0" class="mt-3 d-flex justify-end">
+        <v-btn
+          color="error"
+          variant="tonal"
+          :loading="isPurging"
+          prepend-icon="mdi-delete-sweep"
+          @click="purgeDialog = true"
+        >
+          Purge redacted ({{ redactedCount }})
+        </v-btn>
+      </div>
     </v-card-text>
   </v-card>
 
@@ -161,6 +172,28 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     </v-card>
   </v-dialog>
 
+  <!-- Purge redacted confirmation dialog -->
+  <v-dialog v-model="purgeDialog" max-width="480">
+    <v-card>
+      <v-card-title class="text-error">Purge Redacted Users</v-card-title>
+      <v-card-text>
+        This will <b>permanently delete</b> {{ redactedCount }} redacted user
+        record(s) from the database. This cannot be undone. Are you sure?
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn variant="text" @click="purgeDialog = false">Cancel</v-btn>
+        <v-btn
+          color="error"
+          variant="elevated"
+          :loading="isPurging"
+          @click="purgeRedacted"
+          >Purge</v-btn
+        >
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
   <v-snackbar
     v-model="showSnackbar"
     :timeout="5000"
@@ -193,15 +226,20 @@ export default {
       deleteDialog: false,
       userToDelete: null,
       isDeleting: false,
+      purgeDialog: false,
+      isPurging: false,
       showSnackbar: false,
       snackbarMessage: "",
       snackbarColor: "success",
     };
   },
   computed: {
-    ...mapState("auth", ["user"]),
+    ...mapState("auth", ["user", "accessToken"]),
     currentUser() {
       return this.user || {};
+    },
+    redactedCount() {
+      return this.users.filter((u) => this.isRedacted(u)).length;
     },
     filteredUsers() {
       let list = this.showRedacted
@@ -233,7 +271,6 @@ export default {
           query: { refName: "AdminOrganization" },
         });
         this.adminOrg = orgResult?.data?.[0] || null;
-
         const result = await User.find({ query: { $limit: 200 } });
         this.users = result?.data || [];
       } catch (error) {
@@ -325,6 +362,37 @@ export default {
         this.showMessage(error.message || "Failed to delete user", "error");
       } finally {
         this.isDeleting = false;
+      }
+    },
+    async purgeRedacted() {
+      this.isPurging = true;
+      try {
+        const apiUrl =
+          import.meta.env.VITE_APP_API_URL?.replace(/\/$/, "") || "";
+        const res = await fetch(`${apiUrl}/admin/purge-redacted-users`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+        });
+        const data = await res.json();
+        if (!res.ok)
+          throw new Error(data.error || `Server error ${res.status}`);
+        this.showMessage(
+          `Purged ${data.deletedUsers} redacted user(s) from the database`,
+          "success"
+        );
+        this.purgeDialog = false;
+        await this.loadUsers();
+      } catch (error) {
+        console.error("Failed to purge redacted users:", error);
+        this.showMessage(
+          error.message || "Failed to purge redacted users",
+          "error"
+        );
+      } finally {
+        this.isPurging = false;
       }
     },
     showMessage(message, color) {
