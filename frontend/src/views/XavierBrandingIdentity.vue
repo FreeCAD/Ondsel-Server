@@ -110,8 +110,32 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               <v-card-title>Copyright Text</v-card-title>
               <v-card-text>
                 <v-text-field v-model="copyrightText" label="Copyright Text" :rules="copyrightRules" counter="80"
-                  maxlength="80" hint="This text appears in the sidebar. Keep it short to fit the limited space."
-                  persistent-hint></v-text-field>
+                  maxlength="80" :hint="copyrightHint" persistent-hint></v-text-field>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+
+        <!-- Footer Section -->
+        <v-divider class="my-6"></v-divider>
+
+        <v-row>
+          <v-col cols="12">
+            <v-card class="ma-2" elevation="1">
+              <v-card-title>Footer</v-card-title>
+              <v-card-text>
+                <p class="text-caption text-grey-darken-1 mb-2">
+                  A footer spans the full page width, so it fits longer copyright notices than the sidebar does.
+                  While it shows the copyright, the sidebar entry is hidden to avoid repeating it.
+                </p>
+                <v-switch v-model="footer.enabled" label="Show site footer" color="primary" density="compact"
+                  hide-details></v-switch>
+                <v-switch v-model="footer.showCopyright" label="Copyright" color="primary" density="compact"
+                  :disabled="!footer.enabled" hide-details></v-switch>
+                <v-switch v-model="footer.showTermsOfService" label="Terms of Service link" color="primary"
+                  density="compact" :disabled="!footer.enabled" hide-details></v-switch>
+                <v-switch v-model="footer.showPrivacyPolicy" label="Privacy Policy link" color="primary"
+                  density="compact" :disabled="!footer.enabled" hide-details></v-switch>
               </v-card-text>
             </v-card>
           </v-col>
@@ -120,10 +144,20 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <v-row>
           <v-col cols="12">
             <v-card class="ma-2" elevation="1">
-              <v-card-title>Copyright Preview</v-card-title>
+              <v-card-title>Preview</v-card-title>
               <v-card-text>
-                <p class="text-caption text-grey-darken-1 mb-2">Preview of how this appears in the sidebar:</p>
-                <v-card border="primary md" class="pa-3">
+                <p class="text-caption text-grey-darken-1 mb-2">{{ previewCaption }}</p>
+                <v-card v-if="footer.enabled" border="primary md" class="pa-3">
+                  <div class="d-flex flex-wrap align-center justify-center ga-4 text-body-2">
+                    <span v-if="footer.showCopyright" class="d-flex align-center">
+                      <v-icon size="16" class="mr-1">mdi-copyright</v-icon>
+                      <span>{{ copyrightText }}</span>
+                    </span>
+                    <span v-if="footer.showTermsOfService" class="text-link">Terms of Service</span>
+                    <span v-if="footer.showPrivacyPolicy" class="text-link">Privacy Policy</span>
+                  </div>
+                </v-card>
+                <v-card v-else border="primary md" class="pa-3">
                   <div class="d-flex align-center text-body-2">
                     <v-icon size="16" class="mr-1">mdi-copyright</v-icon>
                     <span>{{ copyrightText }}</span>
@@ -236,6 +270,12 @@ export default {
       previewFaviconUrl: null,
       siteTitle: '',
       copyrightText: '',
+      footer: {
+        enabled: false,
+        showCopyright: true,
+        showTermsOfService: true,
+        showPrivacyPolicy: true
+      },
       socialLinks: {
         forum: { url: '', label: 'Forum' },
         discord: { url: '', label: 'Discord' },
@@ -288,6 +328,16 @@ export default {
   computed: {
     ...mapState('auth', ['accessToken', 'user']),
     ...mapGetters('app', ['siteConfig']),
+    copyrightHint() {
+      return this.footer.enabled && this.footer.showCopyright
+        ? 'This text appears in the footer.'
+        : 'This text appears in the sidebar. Keep it short to fit the limited space.';
+    },
+    previewCaption() {
+      return this.footer.enabled
+        ? 'Preview of how the footer appears:'
+        : 'Preview of how the copyright appears in the sidebar:';
+    },
   },
   watch: {
     'siteConfig': {
@@ -298,6 +348,9 @@ export default {
           }
           if (newVal.copyrightText && !this.copyrightText) {
             this.copyrightText = newVal.copyrightText;
+          }
+          if (newVal.footer) {
+            this.footer = { ...this.footer, ...newVal.footer };
           }
           if (newVal.socialLinks) {
             if (newVal.socialLinks.forum) {
@@ -392,6 +445,7 @@ export default {
           formData.append('faviconFile', this.selectedFaviconFile);
         }
         formData.append('copyrightText', this.copyrightText);
+        formData.append('footer', JSON.stringify(this.footer));
         formData.append('socialLinks', JSON.stringify(this.socialLinks));
         const response = await fetch(`${import.meta.env.VITE_APP_API_URL}site-config/${SITE_CONFIG_ID}`, {
           method: 'PATCH',

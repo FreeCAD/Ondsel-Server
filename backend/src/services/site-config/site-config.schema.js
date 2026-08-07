@@ -49,6 +49,14 @@ const socialLinksSchema = Type.Object({
   youtube: Type.Optional(socialLinkSchema)
 })
 
+// Footer sub-schema
+const footerSchema = Type.Object({
+  enabled: Type.Boolean(),
+  showCopyright: Type.Boolean(),
+  showTermsOfService: Type.Boolean(),
+  showPrivacyPolicy: Type.Boolean()
+})
+
 const desktopAppSchema = Type.Object({
   name: Type.String(),
   version: Type.String(),
@@ -95,6 +103,7 @@ export const siteConfigSchema = Type.Object(
     siteTitle: Type.String(),
     socialLinks: socialLinksSchema,
     copyrightText: Type.String({ minLength: 5, maxLength: 80 }),
+    footer: footerSchema,
     homepageContent: homepageContentSchema,
     defaultModel: defaultModelSchema,
     desktopApp: desktopAppSchema,
@@ -105,6 +114,7 @@ export const siteConfigSchema = Type.Object(
       siteTitle: Type.Boolean(),
       socialLinks: Type.Boolean(),
       copyrightText: Type.Boolean(),
+      footer: Type.Boolean(),
       homepageContent: Type.Boolean(),
       defaultModel: Type.Boolean(),
       desktopApp: Type.Boolean(),

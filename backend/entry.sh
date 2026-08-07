@@ -10,6 +10,7 @@ npm run migration -- \
   createDefaultSiteConfig \
   addOauthToSiteConfig \
   addOidcProviderToSiteConfig \
+  addFooterToSiteConfig \
   addDefaultAdminUser \
   createDefaultPublisherEntries
 

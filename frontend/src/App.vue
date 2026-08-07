@@ -13,17 +13,19 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <router-view/>
       </v-sheet>
     </v-main>
+    <AppFooter v-if="!$route.meta.isWindowLoadedInIframe"/>
   </v-app>
 </template>
 
 <script>
 import MainNavigationBar from '@/layouts/default/MainNavigationBar.vue';
+import AppFooter from '@/layouts/default/AppFooter.vue';
 import { mapActions, mapGetters, mapState } from 'vuex';
 import { getThemePreference, resolveActiveTheme, watchSystemTheme } from '@/themePreference';
 
 export default {
   name: 'App',
-  components: { MainNavigationBar },
+  components: { MainNavigationBar, AppFooter },
   computed: {
     ...mapGetters('app', ['siteConfig']),
     ...mapState('auth', ['user']),

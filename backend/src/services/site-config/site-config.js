@@ -28,7 +28,7 @@ import { verifySiteAdministrativePower, isSiteAdministrator } from '../hooks/adm
 import { setCustomizedFlags } from './set-customized-flags.hook.js'
 import { uploadBrandingLogo } from './upload-branding.hook.js'
 import { uploadDefaultModel, uploadDefaultModelThumbnail } from './upload-default-model.hook.js'
-import { parseSocialLinks } from './parse-social-links.hook.js'
+import { parseJsonFields } from './parse-json-fields.hook.js'
 import multer from 'multer'
 import { fetchOpenIdConfiguration } from '../../authentication/oidc-discovery.js'
 
@@ -238,7 +238,7 @@ export const siteConfig = (app) => {
       patch: [
         authenticate('jwt'),
         verifySiteAdministrativePower,
-        parseSocialLinks,
+        parseJsonFields,
         uploadBrandingLogo,
         uploadDefaultModel,
         uploadDefaultModelThumbnail,

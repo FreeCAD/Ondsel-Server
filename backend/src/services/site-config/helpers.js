@@ -44,6 +44,7 @@ export const filterSiteConfigForPublic = (siteConfig) => {
     siteTitle: siteConfig.siteTitle,
     socialLinks: siteConfig.socialLinks,
     copyrightText: siteConfig.copyrightText,
+    footer: siteConfig.footer,
     homepageContent: siteConfig.homepageContent,
     desktopApp: siteConfig.desktopApp,
     oauth: filterOAuthDataForPublic(siteConfig.oauth),

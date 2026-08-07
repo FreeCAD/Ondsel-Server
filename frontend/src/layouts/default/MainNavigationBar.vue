@@ -121,11 +121,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           </div>
         </v-card>
       </v-menu>
-      <v-divider></v-divider>
-      <v-list-item
-        prepend-icon="mdi-copyright"
-        :title="siteConfig?.copyrightText"
-      ></v-list-item>
+      <template v-if="showSidebarCopyright">
+        <v-divider></v-divider>
+        <v-list-item
+          prepend-icon="mdi-copyright"
+          :title="siteConfig?.copyrightText"
+        ></v-list-item>
+      </template>
       <v-divider></v-divider>
       <v-list-item
         id="navbar-user-action-activator"
@@ -298,6 +300,10 @@ export default {
     ...mapGetters('app', { userCurrentOrganization: 'currentOrganization', siteConfig: 'siteConfig' }),
     currentRouteName: (vm) => vm.$route.name,
     currentOrganization: (vm) => vm.userCurrentOrganization,
+    showSidebarCopyright () {
+      const footer = this.siteConfig?.footer
+      return !(footer?.enabled && footer?.showCopyright)
+    },
     railIcon () {
       return this.rail ? 'mdi-arrow-expand-right' : 'mdi-arrow-collapse-left'
     },
