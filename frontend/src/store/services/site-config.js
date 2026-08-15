@@ -18,6 +18,12 @@ export const SITE_CONFIG_DEFAULTS = {
     youtube: { url: '', label: 'YouTube' }
   },
   copyrightText: '2025 FreeCAD',
+  footer: {
+    enabled: false,
+    showCopyright: true,
+    showTermsOfService: true,
+    showPrivacyPolicy: true
+  },
   homepageContent: {
     title: 'Welcome to Lens',
     markdownContent: 'Welcome to Lens, your collaborative CAD platform. Upload, view, and share 3D models with version control, export capabilities, and real-time collaboration tools.',
@@ -107,6 +113,7 @@ export const SITE_CONFIG_DEFAULTS = {
     siteTitle: false,
     socialLinks: false,
     copyrightText: false,
+    footer: false,
     homepageContent: false,
     defaultModel: false,
     desktopApp: false,
