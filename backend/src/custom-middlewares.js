@@ -213,6 +213,50 @@ function handleStatusEndpoint(app) {
   )
 }
 
+function handlePurgeRedactedUsers(app) {
+  app.use(
+    '/admin/purge-redacted-users',
+    async (req, res, next) => {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+      }
+      try {
+        // Authenticate and verify admin
+        const authService = app.service('authentication');
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+          return res.status(401).json({ error: 'Not authenticated' });
+        }
+        const token = authHeader.replace('Bearer ', '');
+        const authResult = await authService.verifyAccessToken(token);
+        const userService = app.service('users');
+        const user = await userService.get(authResult.sub);
+        const { isSiteAdministrator } = await import('./services/hooks/administration.js');
+        const [isAdmin] = await isSiteAdministrator({ user }, app);
+        if (!isAdmin) {
+          return res.status(403).json({ error: 'Forbidden' });
+        }
+
+        const db = await app.get('mongodbClient');
+
+        // Delete redacted users
+        const userResult = await db.collection('users').deleteMany({
+          name: '<REDACTED>',
+          email: '<REDACTED>',
+        });
+
+        res.json({
+          success: true,
+          deletedUsers: userResult.deletedCount,
+        });
+      } catch (e) {
+        logger.error(e);
+        next(e);
+      }
+    }
+  );
+}
+
 export function registerCustomMiddlewares(app) {
   handleDownloadSharedModelFile(app);
   handleDownloadFile(app);
@@ -220,5 +264,6 @@ export function registerCustomMiddlewares(app) {
   handleLocalFileDownload(app);
   handlePublicBrandingFileDownload(app);
   handleStatusEndpoint(app);
+  handlePurgeRedactedUsers(app);
 }
 

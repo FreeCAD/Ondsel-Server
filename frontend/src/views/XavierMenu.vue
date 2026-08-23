@@ -67,9 +67,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <v-list-item
           color="link"
           class="text-decoration-underline"
-          @click="$router.push({ name: 'XavierRemoveUser', params: {} })"
+          @click="$router.push({ name: 'XavierManageUsers', params: {} })"
         >
-          Remove User
+          Manage Users
         </v-list-item>
       </v-list>
     </v-card-text>
