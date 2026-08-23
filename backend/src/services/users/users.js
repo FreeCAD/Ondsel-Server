@@ -40,7 +40,7 @@ import {
 import {copyUserBeforePatch, distributeUserSummariesHook} from "./users.distrib.js";
 import {buildNewCurationForUser, specialUserOrgCurationHandler} from "./users.curation.js";
 import {changeEmailNotification} from "./commands/changeEmailNotification.js";
-import {verifySiteAdministrativePower} from "../hooks/administration.js";
+import {verifySiteAdministrativePower, isSiteAdministrator } from "../hooks/administration.js";
 import {removeUser} from "./commands/removeUser.js";
 import { handleQueryArgs } from "./helpers.js";
 import { AccountEventTypeMap } from "../account-event/account-event.schema.js";
@@ -49,6 +49,23 @@ import { verifyOAuthCompletionSignature } from "../../authentication/oauth-helpe
 
 export * from './users.class.js'
 export * from './users.schema.js'
+
+
+const checkRegistrationOpen = async (context) => {
+  // Internal calls (migrations, admin creating users) bypass this check
+  if (context.params.provider === undefined) return context; // internal call
+  const siteConfigService = context.app.service('site-config');
+  const siteConfig = await siteConfigService.get(siteConfigId);
+  if (siteConfig.registrationOpen === false) {
+    // Allow site administrators to create users even when registration is closed
+    if (context.params.user) {
+      const [isAdmin] = await isSiteAdministrator(context.params, context.app);
+      if (isAdmin) return context;
+    }
+    throw new BadRequest('Registration is currently closed.');
+  }
+  return context;
+};
 
 
 // A configure function that registers the service and its hooks via `app.configure`
@@ -175,6 +192,7 @@ export const user = (app) => {
         detectUsernameInId
       ],
       create: [
+        checkRegistrationOpen,
         validateOAuthCompletionData,
         schemaHooks.validateData(userDataValidator),
         schemaHooks.resolveData(userDataResolver),

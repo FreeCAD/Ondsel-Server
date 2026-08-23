@@ -118,7 +118,9 @@ export const SITE_CONFIG_DEFAULTS = {
     defaultModel: false,
     desktopApp: false,
     oauth: false,
-  }
+    registrationOpen: true,
+  },
+  registrationOpen: true,
 }
 
 class SiteConfig extends BaseModel {

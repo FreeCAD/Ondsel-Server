@@ -56,7 +56,8 @@ import XavierBrandingIdentity from "@/views/XavierBrandingIdentity.vue";
 import XavierBrandingHomepage from "@/views/XavierBrandingHomepage.vue";
 import XavierBrandingDefaultModel from "@/views/XavierBrandingDefaultModel.vue";
 import XavierOAuthConfig from "@/views/XavierOAuthConfig.vue";
-
+import XavierRegistrationConfig from "@/views/XavierRegistrationConfig.vue";
+import SignUpDisabled from "@/views/SignUpDisabled.vue";
 
 const isWindowLoadedInIframe = () => {
   try {
@@ -84,6 +85,29 @@ const routes = [
     path: '/signup',
     component: SignUp,
     name: 'SignUp',
+    beforeEnter: async (to, from, next) => {
+      await store.dispatch('app/loadSiteConfig');
+      const siteConfig = store.getters['app/siteConfig'];
+      if (siteConfig?.registrationOpen === false) {
+        next({ name: 'SignUpDisabled' });
+      } else {
+        next();
+      }
+    },
+  },
+  {
+    path: '/signup-disabled',
+    component: SignUpDisabled,
+    name: 'SignUpDisabled',
+    beforeEnter: async (to, from, next) => {
+      await store.dispatch('app/loadSiteConfig');
+      const siteConfig = store.getters['app/siteConfig'];
+      if (siteConfig?.registrationOpen === false) {
+        next();
+      } else {
+        next({ name: 'SignUp' });
+      }
+    },
   },
   {
     path: '/oauth-complete',
@@ -275,6 +299,12 @@ const routes = [
     path: '/xavier-oauth-12345678',
     component: XavierOAuthConfig,
     name: 'XavierOAuthConfig',
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/xavier-registration-08121212',
+    component: XavierRegistrationConfig,
+    name: 'XavierRegistrationConfig',
     meta: { requiresAuth: true },
   },
   {

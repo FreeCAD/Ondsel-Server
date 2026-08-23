@@ -108,6 +108,7 @@ export const siteConfigSchema = Type.Object(
     defaultModel: defaultModelSchema,
     desktopApp: desktopAppSchema,
     oauth: oauthConfigSchema,
+    registrationOpen: Type.Optional(Type.Boolean({ default: true })),
     customized: Type.Object({
       logoUrl: Type.Boolean(),
       faviconUrl: Type.Boolean(),
@@ -119,6 +120,7 @@ export const siteConfigSchema = Type.Object(
       defaultModel: Type.Boolean(),
       desktopApp: Type.Boolean(),
       oauth: Type.Boolean(),
+      registrationOpen: Type.Optional(Type.Boolean()),
     }),
     updatedAt: Type.Number(),
     updatedBy: Type.Optional(userSummarySchema)

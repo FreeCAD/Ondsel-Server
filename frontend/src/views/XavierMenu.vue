@@ -27,6 +27,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <v-list-item
           color="link"
           class="text-decoration-underline"
+          @click="$router.push({ name: 'XavierRegistrationConfig', params: {} })"
+        >
+          Registration Configuration
+        </v-list-item>
+        <v-list-item
+          color="link"
+          class="text-decoration-underline"
           @click="$router.push({ name: 'XavierUpdateSoftwareReleases', params: {} })"
         >
           Update Software Releases
