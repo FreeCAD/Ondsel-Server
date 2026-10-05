@@ -9,7 +9,7 @@ import {ModelObject3D, ModelObjectType} from '../model/object.js';
 import { GetFileExtension } from '../utils/fileutils.js';
 import { ArrayBufferToUtf8String } from '../utils/bufferutils.js';
 import { Property, PropertyGroup, PropertyType } from '../model/property.js';
-import { readShapeAppearance, intToRgba } from './utils.js';
+import { readShapeAppearance, readColorList, intToRgba } from './utils.js';
 
 import * as fflate from 'fflate';
 import { OBJ_COLOR } from '@/threejs/libs/constants';
@@ -30,6 +30,7 @@ class FreeCadObject
         this.shapeName = null;
         this.isVisible = false;
         this.color = null;
+        this.faceColors = null;
         this.fileName = null;
         this.fileContent = null;
         this.inLinkCount = 0;
@@ -79,6 +80,7 @@ class FreeCadDocument
         this.objectNames = [];
         this.objectData = new Map ();
         this.documentXml = null;
+        this.appearances = new Map ();
     }
 
     Init (fileContent)
@@ -320,6 +322,35 @@ class FreeCadDocument
         return true;
     }
 
+    ReadAppearance (viewProviderElement)
+    {
+        let faceColors = [];
+        let propertyElements = viewProviderElement.getElementsByTagName ('Property');
+        for (let propertyElement of propertyElements) {
+            let propertyName = propertyElement.getAttribute ('name');
+            if (propertyName === 'ShapeAppearance') {
+                let file = this.GetFirstChildValue (propertyElement, 'MaterialList', 'file');
+                if (!file || !this.HasFile (file)) {
+                    continue;
+                }
+                faceColors = readShapeAppearance (this.files[file]).map (material => ({
+                    color : new THREE.Color (...intToRgba (material.diffuseColor)),
+                    transparency : material.transparency
+                }));
+            } else if (propertyName === 'DiffuseColor' && faceColors.length === 0) {
+                let file = this.GetFirstChildValue (propertyElement, 'ColorList', 'file');
+                if (!file || !this.HasFile (file)) {
+                    continue;
+                }
+                faceColors = readColorList (this.files[file]).map (packed => ({
+                    color : new THREE.Color (...intToRgba (packed)),
+                    transparency : 0
+                }));
+            }
+        }
+        return faceColors;
+    }
+
     LoadGuiDocumentXml ()
     {
         let documentXml = this.GetXMLContent ('GuiDocument.xml');
@@ -328,6 +359,17 @@ class FreeCadDocument
         }
 
         let viewProviderElements = documentXml.getElementsByTagName ('ViewProvider');
+        for (let viewProviderElement of viewProviderElements) {
+            let name = viewProviderElement.getAttribute ('name');
+            if (name === null) {
+                continue;
+            }
+            let faceColors = this.ReadAppearance (viewProviderElement);
+            if (faceColors.length > 0) {
+                this.appearances.set (name, faceColors);
+            }
+        }
+
         for (let viewProviderElement of viewProviderElements) {
             let name = viewProviderElement.getAttribute ('name');
             if (!this.objectData.has (name)) {
@@ -356,11 +398,9 @@ class FreeCadDocument
                         <MaterialList file="ShapeAppearance" version="3"/>
                     </Property>
                      */
-                    let file = this.GetFirstChildValue (propertyElement, 'MaterialList', 'file');
-                    const shapeAppearanceBuffer = this.files[file];
-                    const materialList = readShapeAppearance(shapeAppearanceBuffer);
-                    if (materialList.length) {
-                        object.color = new THREE.Color(...intToRgba(materialList[0].specularColor))
+                    const faceColors = this.appearances.get (name);
+                    if (faceColors) {
+                        object.color = faceColors[0].color;
                     }
                 } else if (propertyName === 'ShapeMaterial') {
                     /*
@@ -372,6 +412,17 @@ class FreeCadDocument
                     const colorInt = parseInt (colorString, 10);
                     object.color = new THREE.Color(...intToRgba(colorInt));
                 }
+            }
+        }
+
+        for (let [name, object] of this.objectData) {
+            let appearance = this.appearances.get (name);
+            if (appearance === undefined) {
+                continue;
+            }
+            object.faceColors = appearance.length > 1 ? appearance : null;
+            if (object.color === null) {
+                object.color = appearance[0].color;
             }
         }
 
@@ -683,14 +734,59 @@ export class ImporterFcstd
             const index = Uint32Array.from(resultMesh.index.array);
             geometry.setIndex(new THREE.BufferAttribute(index, 1));
 
-            let material = new THREE.MeshPhongMaterial({color: object.GetColor()})
-            const mesh = new THREE.Mesh (geometry, material);
+            const mesh = this.BuildMesh (geometry, resultMesh, object);
             mainObject.add(mesh);
         }
         object3d.SetObject3d(mainObject);
 
         this.model.AddObject(object3d);
 
+    }
+
+    BuildMesh (geometry, resultMesh, object)
+    {
+        const faceColors = object.faceColors;
+        const faces = resultMesh.brep_faces;
+        if (!faceColors || !faces || faces.length !== faceColors.length) {
+            return new THREE.Mesh (geometry, new THREE.MeshPhongMaterial ({ color: object.GetColor () }));
+        }
+
+        const materials = [];
+        const materialIndexByKey = new Map ();
+        let groupStart = 0;
+        let groupCount = 0;
+        let groupIndex = -1;
+        for (let i = 0; i < faces.length; i++) {
+            const entry = faceColors[i];
+            const key = entry.color.getHex () + ':' + entry.transparency;
+            let materialIndex = materialIndexByKey.get (key);
+            if (materialIndex === undefined) {
+                materialIndex = materials.length;
+                const material = new THREE.MeshPhongMaterial ({ color: entry.color });
+                if (entry.transparency > 0) {
+                    material.transparent = true;
+                    material.opacity = 1 - entry.transparency;
+                }
+                materials.push (material);
+                materialIndexByKey.set (key, materialIndex);
+            }
+            const start = faces[i].first * 3;
+            const count = (faces[i].last - faces[i].first + 1) * 3;
+            if (materialIndex === groupIndex && start === groupStart + groupCount) {
+                groupCount += count;
+                continue;
+            }
+            if (groupIndex !== -1) {
+                geometry.addGroup (groupStart, groupCount, groupIndex);
+            }
+            groupStart = start;
+            groupCount = count;
+            groupIndex = materialIndex;
+        }
+        if (groupIndex !== -1) {
+            geometry.addGroup (groupStart, groupCount, groupIndex);
+        }
+        return new THREE.Mesh (geometry, materials);
     }
 
     AssignDataToModelObject(freecadObj, object3d) {

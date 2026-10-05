@@ -189,14 +189,26 @@ export class Viewer {
     if (!this.selectedObjs.includes(modelObject3d)) {
       if (modelObject3d.IsShapeType() || modelObject3d.type === ModelObjectType.Image) {
         const meshObj = getObject3dFromScene(this.scene, modelObject3d);
-        meshObj.material.color.set(OBJ_HIGHLIGHTED_COLOR);
+        if (Array.isArray(meshObj.material)) {
+          // per-face materials: swap the whole array for one highlight material
+          meshObj.userData.faceMaterials = meshObj.material;
+          meshObj.material = new THREE.MeshPhongMaterial({color: OBJ_HIGHLIGHTED_COLOR});
+        } else {
+          meshObj.material.color.set(OBJ_HIGHLIGHTED_COLOR);
+        }
       }
       this.selectedObjs.push(modelObject3d);
     } else {
       const color = modelObject3d ? modelObject3d.GetColor() : OBJ_COLOR;
       if (modelObject3d.IsShapeType() || modelObject3d.type === ModelObjectType.Image) {
         const meshObj = getObject3dFromScene(this.scene, modelObject3d);
-        meshObj.material.color.set(color);
+        if (meshObj.userData.faceMaterials) {
+          meshObj.material.dispose();
+          meshObj.material = meshObj.userData.faceMaterials;
+          delete meshObj.userData.faceMaterials;
+        } else {
+          meshObj.material.color.set(color);
+        }
       }
       const index = this.selectedObjs.indexOf(modelObject3d);
       if (index > -1) {
