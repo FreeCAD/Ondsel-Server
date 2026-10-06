@@ -78,51 +78,40 @@ export class ImporterStep {
       // Create Tree Structure
 
       for (let root of data.root.children) {
-        let rootObj = this.model.GetObjectByName(root.name);
-        if (!rootObj) {
-          rootObj = new ModelObject3D();
-          rootObj.SetType(ModelObjectType.Group);
-          rootObj.SetName(root.name);
-          rootObj.SetRealName(root.name);
-          const rootObjGroup = new THREE.Group();
-          rootObj.SetObject3d(rootObjGroup);
-          this.model.AddObject(rootObj);
-        }
-        for (let child of root.children) {
-          let childObj = this.model.GetObjectByName(child.name);
-          if (!childObj) {
-            childObj = new ModelObject3D();
-            childObj.SetType(ModelObjectType.Group);
-            const childObjGroup = new THREE.Group();
-            childObj.SetName(child.name);
-            childObj.SetRealName(child.name);
-            childObj.SetObject3d(childObjGroup);
-            this.model.AddObject(childObj);
-          }
-          rootObj.AddChildren(childObj);
-          rootObj.GetObject3d().add(childObj.GetObject3d());
-          childObj.SetParent(rootObj);
-          for (let index in child.children) {
-            const indexObj = this.model.GetObjects()[index];
-            childObj.GetObject3d().add(indexObj.GetObject3d());
-            childObj.AddChildren(indexObj);
-            indexObj.SetParent(childObj);
-          }
-
-          for (let meshIndex of child.meshes) {
-            const meshObj = this.model.GetObjects()[meshIndex]
-            if (childObj.GetName() === meshObj.GetName()) {
-              continue;
-            }
-
-            childObj.GetObject3d().add(meshObj.GetObject3d());
-            childObj.AddChildren(meshObj);
-            meshObj.SetParent(childObj);
-          }
-        }
+        this.AddNode(null, root);
       }
       onFinish(this.model);
     });
 
+  }
+
+  AddNode(parentObj, node) {
+    // A leaf node with one mesh is that mesh object; anything else becomes a group
+    let nodeObj;
+    if (node.children.length === 0 && node.meshes.length === 1) {
+      nodeObj = this.model.GetObjects()[node.meshes[0]];
+    } else {
+      nodeObj = new ModelObject3D();
+      nodeObj.SetType(ModelObjectType.Group);
+      nodeObj.SetName(node.name);
+      nodeObj.SetRealName(node.name);
+      nodeObj.SetObject3d(new THREE.Group());
+      this.model.AddObject(nodeObj);
+      for (let meshIndex of node.meshes) {
+        this.AttachNode(nodeObj, this.model.GetObjects()[meshIndex]);
+      }
+      for (let child of node.children) {
+        this.AddNode(nodeObj, child);
+      }
+    }
+    if (parentObj) {
+      this.AttachNode(parentObj, nodeObj);
+    }
+  }
+
+  AttachNode(parentObj, childObj) {
+    parentObj.AddChildren(childObj);
+    parentObj.GetObject3d().add(childObj.GetObject3d());
+    childObj.SetParent(parentObj);
   }
 }
