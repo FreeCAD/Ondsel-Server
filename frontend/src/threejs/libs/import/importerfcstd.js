@@ -80,6 +80,8 @@ class FreeCadDocument
         this.objectNames = [];
         this.objectData = new Map ();
         this.documentXml = null;
+        this.linkTargets = new Map ();
+        this.groups = new Map ();
         this.appearances = new Map ();
     }
 
@@ -234,6 +236,7 @@ class FreeCadDocument
             let objectElements = objectDataElement.getElementsByTagName ('Object');
             for (let objectElement of objectElements) {
                 let name = objectElement.getAttribute ('name');
+                this.ReadLinkStructure (name, objectElement);
                 if (!this.objectData.has (name)) {
                     continue;
                 }
@@ -322,6 +325,28 @@ class FreeCadDocument
         return true;
     }
 
+    ReadLinkStructure (name, objectElement)
+    {
+        let propertyElements = objectElement.getElementsByTagName ('Property');
+        for (let propertyElement of propertyElements) {
+            let propertyName = propertyElement.getAttribute ('name');
+            let propertyType = propertyElement.getAttribute ('type');
+            if (propertyName === 'LinkedObject' && propertyType === 'App::PropertyXLink') {
+                let file = this.GetFirstChildValue (propertyElement, 'XLink', 'file');
+                let target = this.GetFirstChildValue (propertyElement, 'XLink', 'name');
+                if (target && !file) {
+                    this.linkTargets.set (name, target);
+                }
+            } else if (propertyName === 'Group' && propertyType === 'App::PropertyLinkList') {
+                let members = [];
+                for (let linkElement of propertyElement.getElementsByTagName ('Link')) {
+                    members.push (linkElement.getAttribute ('value'));
+                }
+                this.groups.set (name, members);
+            }
+        }
+    }
+
     ReadAppearance (viewProviderElement)
     {
         let faceColors = [];
@@ -349,6 +374,49 @@ class FreeCadDocument
             }
         }
         return faceColors;
+    }
+
+    ResolveLinkTargets (name, seen)
+    {
+        if (seen.has (name)) {
+            return [];
+        }
+        seen.add (name);
+        if (this.linkTargets.has (name)) {
+            return this.ResolveLinkTargets (this.linkTargets.get (name), seen);
+        }
+        if (this.groups.has (name)) {
+            let targets = [];
+            for (let member of this.groups.get (name)) {
+                targets.push (...this.ResolveLinkTargets (member, seen));
+            }
+            return targets;
+        }
+        return [name];
+    }
+
+    ResolveAppearance (name)
+    {
+        let own = this.appearances.get (name);
+        if (own) {
+            return own;
+        }
+        if (!this.linkTargets.has (name) && !this.groups.has (name)) {
+            return null;
+        }
+        let faceColors = [];
+        for (let target of this.ResolveLinkTargets (name, new Set ())) {
+            let list = this.appearances.get (target);
+            if (!list) {
+                return null;
+            }
+            if (list.length === 1 && faceColors.length + list.length > 1) {
+                // one-entry member cannot be expanded without its face count
+                return [list[0]];
+            }
+            faceColors.push (...list);
+        }
+        return faceColors.length > 0 ? faceColors : null;
     }
 
     LoadGuiDocumentXml ()
@@ -416,8 +484,8 @@ class FreeCadDocument
         }
 
         for (let [name, object] of this.objectData) {
-            let appearance = this.appearances.get (name);
-            if (appearance === undefined) {
+            let appearance = this.ResolveAppearance (name);
+            if (appearance === null) {
                 continue;
             }
             object.faceColors = appearance.length > 1 ? appearance : null;
