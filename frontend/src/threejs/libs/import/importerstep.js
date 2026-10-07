@@ -7,6 +7,7 @@ import occtimportjs from 'occt-import-js';
 import { OBJ_COLOR } from '@/threejs/libs/constants';
 import { Model } from '@/threejs/libs/model/model';
 import {ModelObject3D, ModelObjectType} from '@/threejs/libs/model/object';
+import { buildMesh, linearRgbToColor } from '@/threejs/libs/import/utils';
 
 export class ImporterStep {
 
@@ -52,10 +53,19 @@ export class ImporterStep {
           object3d.SetName(resultMesh.name);
           object3d.SetRealName(resultMesh.name);
         }
+        // occt-import-js returns linear RGB; the viewer renders colors as given
         if (resultMesh.color) {
-          object3d.SetColor(new THREE.Color(resultMesh.color[0], resultMesh.color[1], resultMesh.color[2]));
+          object3d.SetColor(linearRgbToColor(resultMesh.color));
         } else {
           object3d.SetColor(new THREE.Color(OBJ_COLOR));
+        }
+        let faceColors = null;
+        const brepFaces = resultMesh.brep_faces || [];
+        if (brepFaces.length > 0 && brepFaces.every(face => face.color)) {
+          faceColors = brepFaces.map(face => ({color: linearRgbToColor(face.color), transparency: 0}));
+          if (!resultMesh.color) {
+            object3d.SetColor(faceColors[0].color);
+          }
         }
 
         let mainObject = new THREE.Object3D();
@@ -67,8 +77,7 @@ export class ImporterStep {
         }
         const index = Uint32Array.from(resultMesh.index.array);
         geometry.setIndex(new THREE.BufferAttribute(index, 1));
-        let material = new THREE.MeshPhongMaterial({color: object3d.GetColor()})
-        const mesh = new THREE.Mesh (geometry, material);
+        const mesh = buildMesh(geometry, brepFaces, faceColors, object3d.GetColor());
         mainObject.add(mesh);
         object3d.SetObject3d(mainObject);
         object3d.SetType(ModelObjectType.Shape);

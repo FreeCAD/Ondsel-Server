@@ -9,7 +9,7 @@ import {ModelObject3D, ModelObjectType} from '../model/object.js';
 import { GetFileExtension } from '../utils/fileutils.js';
 import { ArrayBufferToUtf8String } from '../utils/bufferutils.js';
 import { Property, PropertyGroup, PropertyType } from '../model/property.js';
-import { readShapeAppearance, readColorList, intToRgba } from './utils.js';
+import { readShapeAppearance, readColorList, intToRgba, buildMesh } from './utils.js';
 
 import * as fflate from 'fflate';
 import { OBJ_COLOR } from '@/threejs/libs/constants';
@@ -734,59 +734,13 @@ export class ImporterFcstd
             const index = Uint32Array.from(resultMesh.index.array);
             geometry.setIndex(new THREE.BufferAttribute(index, 1));
 
-            const mesh = this.BuildMesh (geometry, resultMesh, object);
+            const mesh = buildMesh (geometry, resultMesh.brep_faces, object.faceColors, object.GetColor ());
             mainObject.add(mesh);
         }
         object3d.SetObject3d(mainObject);
 
         this.model.AddObject(object3d);
 
-    }
-
-    BuildMesh (geometry, resultMesh, object)
-    {
-        const faceColors = object.faceColors;
-        const faces = resultMesh.brep_faces;
-        if (!faceColors || !faces || faces.length !== faceColors.length) {
-            return new THREE.Mesh (geometry, new THREE.MeshPhongMaterial ({ color: object.GetColor () }));
-        }
-
-        const materials = [];
-        const materialIndexByKey = new Map ();
-        let groupStart = 0;
-        let groupCount = 0;
-        let groupIndex = -1;
-        for (let i = 0; i < faces.length; i++) {
-            const entry = faceColors[i];
-            const key = entry.color.getHex () + ':' + entry.transparency;
-            let materialIndex = materialIndexByKey.get (key);
-            if (materialIndex === undefined) {
-                materialIndex = materials.length;
-                const material = new THREE.MeshPhongMaterial ({ color: entry.color });
-                if (entry.transparency > 0) {
-                    material.transparent = true;
-                    material.opacity = 1 - entry.transparency;
-                }
-                materials.push (material);
-                materialIndexByKey.set (key, materialIndex);
-            }
-            const start = faces[i].first * 3;
-            const count = (faces[i].last - faces[i].first + 1) * 3;
-            if (materialIndex === groupIndex && start === groupStart + groupCount) {
-                groupCount += count;
-                continue;
-            }
-            if (groupIndex !== -1) {
-                geometry.addGroup (groupStart, groupCount, groupIndex);
-            }
-            groupStart = start;
-            groupCount = count;
-            groupIndex = materialIndex;
-        }
-        if (groupIndex !== -1) {
-            geometry.addGroup (groupStart, groupCount, groupIndex);
-        }
-        return new THREE.Mesh (geometry, materials);
     }
 
     AssignDataToModelObject(freecadObj, object3d) {
