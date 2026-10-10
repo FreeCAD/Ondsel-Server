@@ -126,7 +126,7 @@ export default {
   },
   computed: {
     ...mapState('auth', ['accessToken', 'user']),
-    valid3dModelExtensions: () => ['fcstd', 'obj', 'step', 'stp'],
+    valid3dModelExtensions: () => ['fcstd', 'obj', 'step', 'stp', 'kicad_pcb'],
     dropzoneOptions() {
       const h = import.meta.env.VITE_APP_API_URL;
       const vm = this;

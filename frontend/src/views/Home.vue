@@ -120,7 +120,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               class="text-left"
               v-else-if="error === 'InvalidFileType'"
             >
-              <span>Only *.FCStd, *.STEP/STP and *.OBJ files accepted.</span>
+              <span>Only *.FCStd, *.STEP/STP, *.OBJ and *.kicad_pcb files accepted.</span>
             </v-alert>
             <v-alert
               variant="outlined"
@@ -347,7 +347,7 @@ export default {
           Authorization: vm.accessToken,
         },
         previewTemplate: vm.template(),
-        acceptedFiles: '.OBJ,.FCSTD,.STEP,.STP',
+        acceptedFiles: '.OBJ,.FCSTD,.STEP,.STP,.kicad_pcb',
         clickable: '#dropzone-click-target',
         renameFile: file => `${uuidv4()}.${file.name.split('.').pop()}`,
         init() {
