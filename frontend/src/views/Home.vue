@@ -184,7 +184,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <div class="text-h6 mt-6">
                   <v-icon icon="mdi-cloud-upload"></v-icon> Drag file to upload or <v-btn id="dropzone-click-target">BROWSE</v-btn>
                 </div>
-                <div class="text-caption mt-2 mb-6">Allowed extensions: FCSTD, STEP, STP, OBJ</div>
+                <div class="text-caption mt-2 mb-6">Allowed extensions: FCSTD, STEP, STP, OBJ, KICAD_PCB</div>
                 <div class="d-flex justify-center">
                   <div>
                     <v-checkbox
