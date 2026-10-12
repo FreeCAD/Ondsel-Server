@@ -213,6 +213,8 @@ import Main from '@/layouts/default/Main.vue';
 import { getTextColorForBackground } from '@/genericHelpers';
 
 
+import { OAUTH_REDIRECT_KEY } from "@/util/oauthRedirect";
+
 export default {
   name: 'Login',
   components: {ForgotPasswordDialog, MarkdownViewer, Main},
@@ -321,6 +323,17 @@ export default {
     loginWithOAuth(provider) {
       if (this.isOAuthRedirecting || this.isAuthenticatePending) {
         return;
+      }
+
+      // An OAuth sign-in leaves the SPA entirely and returns at /oauth-complete,
+      // so the redirect_uri this route was given would otherwise be lost. The
+      // local strategy keeps it only because that path never leaves the page.
+      // Stash it for OAuthComplete to pick up on the way back.
+      const redirectUri = this.$route.query.redirect_uri;
+      if (redirectUri) {
+        window.sessionStorage.setItem(OAUTH_REDIRECT_KEY, redirectUri);
+      } else {
+        window.sessionStorage.removeItem(OAUTH_REDIRECT_KEY);
       }
 
       this.isOAuthRedirecting = true;

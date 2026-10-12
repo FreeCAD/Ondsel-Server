@@ -164,6 +164,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 </template>
 
 <script>
+import { takeSafeOAuthRedirect } from "@/util/oauthRedirect";
 import {mapActions, mapGetters} from 'vuex';
 import { models } from '@feathersjs/vuex';
 import feathersClient from '@/plugins/feathers-client';
@@ -400,7 +401,16 @@ export default {
           strategy: 'jwt',
           accessToken: accessToken
         });
-        this.$router.push({ name: 'LensHome' });
+        // Honour a redirect_uri that /login was given before it handed off to
+        // the provider. Without this an OAuth sign-in always lands on LensHome,
+        // which silently breaks any flow that sent the user through login to
+        // reach a particular page.
+        const back = takeSafeOAuthRedirect();
+        if (back) {
+          this.$router.replace(back);
+        } else {
+          this.$router.push({ name: 'LensHome' });
+        }
         return true;
       } catch (error) {
         console.error('OAuth authentication failed:', error);
