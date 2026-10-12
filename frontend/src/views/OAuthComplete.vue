@@ -291,13 +291,22 @@ export default {
               strategy: 'jwt',
               accessToken: accessToken
             });
-            // Redirect to Download/Explore page (same as email verification flow)
             this.isCreating = false;
-            this.$router
-              .push({name: 'DownloadAndExplore', query: { psu: true }})
-              .then(() => {
-                this.$router.go() // Force refresh on destination
-              });
+            // A first sign-in that arrived here from somewhere specific should
+            // finish where it was going. Without this, a brand new account
+            // completes signup and lands on the download page, so a flow that
+            // sent the user through login never resumes.
+            const back = takeSafeOAuthRedirect();
+            if (back) {
+              this.$router.replace(back);
+            } else {
+              // Redirect to Download/Explore page (same as email verification flow)
+              this.$router
+                .push({name: 'DownloadAndExplore', query: { psu: true }})
+                .then(() => {
+                  this.$router.go() // Force refresh on destination
+                });
+            }
           } else {
             // Fallback: redirect to login if token generation failed
             this.isCreating = false;
