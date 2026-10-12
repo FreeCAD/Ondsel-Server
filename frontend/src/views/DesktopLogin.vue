@@ -29,7 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
         <v-card-actions class="justify-center mt-2">
           <v-btn color="primary" variant="elevated" @click="handOff">
-            Open in FreeCAD
+            {{ handedOff ? "Send to FreeCAD again" : "Open in FreeCAD" }}
           </v-btn>
         </v-card-actions>
 
@@ -77,6 +77,15 @@ export default {
       }
       return parsed;
     },
+  },
+  mounted() {
+    // Nothing here needs a decision from the user. The callback is already
+    // restricted to loopback, and the session already exists, so the click was
+    // pure friction. Kept as a button below for a retry, or if the navigation
+    // is blocked.
+    if (this.safeCallback && this.accessToken) {
+      this.handOff();
+    }
   },
   created() {
     if (!this.$route.query.callback) {
