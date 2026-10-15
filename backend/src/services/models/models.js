@@ -241,6 +241,10 @@ const startObjGeneration = async (context) => {
     throw new BadRequest('Not able to find filename')
   }
 
+  if (fileName.toUpperCase().endsWith('.KICAD_PCB') && !context.app.get('kicadEnabled')) {
+    throw new BadRequest('KiCad support is disabled on this site', { type: 'KicadDisabled' });
+  }
+
   // When input file is STEP, then don't need runner, viewer can render STEP file directly.
   if (fileName.toUpperCase().split('.').pop() === 'STP' || fileName.toUpperCase().split('.').pop() === 'STEP') {
     const uploadService = context.app.service('upload');
