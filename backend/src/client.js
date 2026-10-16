@@ -27,8 +27,6 @@ import { organizationClient } from './services/organizations/organizations.share
 
 import { authManagementClient } from './services/auth-management/auth-management.shared.js'
 
-import { emailClient } from './services/email/email.shared.js'
-
 import { runnerLogsClient } from './services/runner-logs/runner-logs.shared.js'
 
 import { codeRunsClient } from './services/code-runs/code-runs.shared.js'
@@ -101,8 +99,6 @@ export const createClient = (connection, authenticationOptions = {}) => {
   client.configure(groupClient)
 
   client.configure(directoryClient)
-
-  client.configure(emailClient)
 
   client.configure(authManagementClient)
 
