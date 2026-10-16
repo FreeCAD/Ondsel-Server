@@ -36,6 +36,21 @@ const isValidFileName = (fileName, isAdmin = false) => {
   return regexes.some(regex => regex.test(fileName))
 }
 
+// Resolves `fileName` inside the `root` directory. Returns null if the result would escape `root`
+// (e.g. via `../` segments or an absolute path), so client-supplied names can't reach other files.
+// See GHSA-c92p-76pm-5vfq for details.
+export const resolveInsideDirectory = (root, fileName) => {
+  if (typeof fileName !== 'string' || fileName.length === 0 || fileName.includes('\0')) {
+    return null;
+  }
+  const resolvedRoot = path.resolve(root);
+  const filePath = path.resolve(resolvedRoot, fileName);
+  if (!filePath.startsWith(resolvedRoot + path.sep)) {
+    return null;
+  }
+  return filePath;
+}
+
 class UploadService {
   constructor(options, blobService, s3Client) {
     this.options = options;
@@ -47,7 +62,11 @@ class UploadService {
   }
 
   getLocalFilePath(fileName) {
-    return path.join(path.resolve('uploads'), fileName);
+    const filePath = resolveInsideDirectory('uploads', fileName);
+    if (!filePath) {
+      throw new BadRequest('Invalid file name!');
+    }
+    return filePath;
   }
 
   getPublicUrl(fileName, bucket) {
