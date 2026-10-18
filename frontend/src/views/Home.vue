@@ -120,7 +120,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               class="text-left"
               v-else-if="error === 'InvalidFileType'"
             >
-              <span>Only *.FCStd, *.STEP/STP and *.OBJ files accepted.</span>
+              <span>Only *.FCStd, *.STEP/STP, *.OBJ and *.kicad_pcb files accepted.</span>
             </v-alert>
             <v-alert
               variant="outlined"
@@ -184,7 +184,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <div class="text-h6 mt-6">
                   <v-icon icon="mdi-cloud-upload"></v-icon> Drag file to upload or <v-btn id="dropzone-click-target">BROWSE</v-btn>
                 </div>
-                <div class="text-caption mt-2 mb-6">Allowed extensions: FCSTD, STEP, STP, OBJ</div>
+                <div class="text-caption mt-2 mb-6">Allowed extensions: FCSTD, STEP, STP, OBJ, KICAD_PCB</div>
                 <div class="d-flex justify-center">
                   <div>
                     <v-checkbox
@@ -347,7 +347,7 @@ export default {
           Authorization: vm.accessToken,
         },
         previewTemplate: vm.template(),
-        acceptedFiles: '.OBJ,.FCSTD,.STEP,.STP',
+        acceptedFiles: '.OBJ,.FCSTD,.STEP,.STP,.kicad_pcb',
         clickable: '#dropzone-click-target',
         renameFile: file => `${uuidv4()}.${file.name.split('.').pop()}`,
         init() {
