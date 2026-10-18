@@ -9,7 +9,7 @@ import {ModelObject3D, ModelObjectType} from '../model/object.js';
 import { GetFileExtension } from '../utils/fileutils.js';
 import { ArrayBufferToUtf8String } from '../utils/bufferutils.js';
 import { Property, PropertyGroup, PropertyType } from '../model/property.js';
-import { readShapeAppearance, intToRgba } from './utils.js';
+import { readShapeAppearance, readColorList, intToRgba, buildMesh } from './utils.js';
 
 import * as fflate from 'fflate';
 import { OBJ_COLOR } from '@/threejs/libs/constants';
@@ -30,6 +30,7 @@ class FreeCadObject
         this.shapeName = null;
         this.isVisible = false;
         this.color = null;
+        this.faceColors = null;
         this.fileName = null;
         this.fileContent = null;
         this.inLinkCount = 0;
@@ -79,6 +80,9 @@ class FreeCadDocument
         this.objectNames = [];
         this.objectData = new Map ();
         this.documentXml = null;
+        this.linkTargets = new Map ();
+        this.groups = new Map ();
+        this.appearances = new Map ();
     }
 
     Init (fileContent)
@@ -232,6 +236,7 @@ class FreeCadDocument
             let objectElements = objectDataElement.getElementsByTagName ('Object');
             for (let objectElement of objectElements) {
                 let name = objectElement.getAttribute ('name');
+                this.ReadLinkStructure (name, objectElement);
                 if (!this.objectData.has (name)) {
                     continue;
                 }
@@ -320,6 +325,100 @@ class FreeCadDocument
         return true;
     }
 
+    ReadLinkStructure (name, objectElement)
+    {
+        let propertyElements = objectElement.getElementsByTagName ('Property');
+        for (let propertyElement of propertyElements) {
+            let propertyName = propertyElement.getAttribute ('name');
+            let propertyType = propertyElement.getAttribute ('type');
+            if (propertyName === 'LinkedObject' && propertyType === 'App::PropertyXLink') {
+                let file = this.GetFirstChildValue (propertyElement, 'XLink', 'file');
+                let target = this.GetFirstChildValue (propertyElement, 'XLink', 'name');
+                if (target && !file) {
+                    this.linkTargets.set (name, target);
+                }
+            } else if (propertyName === 'Group' && propertyType === 'App::PropertyLinkList') {
+                let members = [];
+                for (let linkElement of propertyElement.getElementsByTagName ('Link')) {
+                    members.push (linkElement.getAttribute ('value'));
+                }
+                this.groups.set (name, members);
+            }
+        }
+    }
+
+    ReadAppearance (viewProviderElement)
+    {
+        let faceColors = [];
+        let propertyElements = viewProviderElement.getElementsByTagName ('Property');
+        for (let propertyElement of propertyElements) {
+            let propertyName = propertyElement.getAttribute ('name');
+            if (propertyName === 'ShapeAppearance') {
+                let file = this.GetFirstChildValue (propertyElement, 'MaterialList', 'file');
+                if (!file || !this.HasFile (file)) {
+                    continue;
+                }
+                faceColors = readShapeAppearance (this.files[file]).map (material => ({
+                    color : new THREE.Color (...intToRgba (material.diffuseColor)),
+                    transparency : material.transparency
+                }));
+            } else if (propertyName === 'DiffuseColor' && faceColors.length === 0) {
+                let file = this.GetFirstChildValue (propertyElement, 'ColorList', 'file');
+                if (!file || !this.HasFile (file)) {
+                    continue;
+                }
+                faceColors = readColorList (this.files[file]).map (packed => ({
+                    color : new THREE.Color (...intToRgba (packed)),
+                    transparency : 0
+                }));
+            }
+        }
+        return faceColors;
+    }
+
+    ResolveLinkTargets (name, seen)
+    {
+        if (seen.has (name)) {
+            return [];
+        }
+        seen.add (name);
+        if (this.linkTargets.has (name)) {
+            return this.ResolveLinkTargets (this.linkTargets.get (name), seen);
+        }
+        if (this.groups.has (name)) {
+            let targets = [];
+            for (let member of this.groups.get (name)) {
+                targets.push (...this.ResolveLinkTargets (member, seen));
+            }
+            return targets;
+        }
+        return [name];
+    }
+
+    ResolveAppearance (name)
+    {
+        let own = this.appearances.get (name);
+        if (own) {
+            return own;
+        }
+        if (!this.linkTargets.has (name) && !this.groups.has (name)) {
+            return null;
+        }
+        let faceColors = [];
+        for (let target of this.ResolveLinkTargets (name, new Set ())) {
+            let list = this.appearances.get (target);
+            if (!list) {
+                return null;
+            }
+            if (list.length === 1 && faceColors.length + list.length > 1) {
+                // one-entry member cannot be expanded without its face count
+                return [list[0]];
+            }
+            faceColors.push (...list);
+        }
+        return faceColors.length > 0 ? faceColors : null;
+    }
+
     LoadGuiDocumentXml ()
     {
         let documentXml = this.GetXMLContent ('GuiDocument.xml');
@@ -328,6 +427,17 @@ class FreeCadDocument
         }
 
         let viewProviderElements = documentXml.getElementsByTagName ('ViewProvider');
+        for (let viewProviderElement of viewProviderElements) {
+            let name = viewProviderElement.getAttribute ('name');
+            if (name === null) {
+                continue;
+            }
+            let faceColors = this.ReadAppearance (viewProviderElement);
+            if (faceColors.length > 0) {
+                this.appearances.set (name, faceColors);
+            }
+        }
+
         for (let viewProviderElement of viewProviderElements) {
             let name = viewProviderElement.getAttribute ('name');
             if (!this.objectData.has (name)) {
@@ -356,11 +466,9 @@ class FreeCadDocument
                         <MaterialList file="ShapeAppearance" version="3"/>
                     </Property>
                      */
-                    let file = this.GetFirstChildValue (propertyElement, 'MaterialList', 'file');
-                    const shapeAppearanceBuffer = this.files[file];
-                    const materialList = readShapeAppearance(shapeAppearanceBuffer);
-                    if (materialList.length) {
-                        object.color = new THREE.Color(...intToRgba(materialList[0].specularColor))
+                    const faceColors = this.appearances.get (name);
+                    if (faceColors) {
+                        object.color = faceColors[0].color;
                     }
                 } else if (propertyName === 'ShapeMaterial') {
                     /*
@@ -372,6 +480,17 @@ class FreeCadDocument
                     const colorInt = parseInt (colorString, 10);
                     object.color = new THREE.Color(...intToRgba(colorInt));
                 }
+            }
+        }
+
+        for (let [name, object] of this.objectData) {
+            let appearance = this.ResolveAppearance (name);
+            if (appearance === null) {
+                continue;
+            }
+            object.faceColors = appearance.length > 1 ? appearance : null;
+            if (object.color === null) {
+                object.color = appearance[0].color;
             }
         }
 
@@ -683,8 +802,7 @@ export class ImporterFcstd
             const index = Uint32Array.from(resultMesh.index.array);
             geometry.setIndex(new THREE.BufferAttribute(index, 1));
 
-            let material = new THREE.MeshPhongMaterial({color: object.GetColor()})
-            const mesh = new THREE.Mesh (geometry, material);
+            const mesh = buildMesh (geometry, resultMesh.brep_faces, object.faceColors, object.GetColor ());
             mainObject.add(mesh);
         }
         object3d.SetObject3d(mainObject);
