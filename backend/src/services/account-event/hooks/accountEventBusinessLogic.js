@@ -12,6 +12,7 @@ import {DoSubscriptionRefund} from "../businessLogic/DoSubscriptionRefund.js";
 import {DoSubscriptionTierDowngrade} from "../businessLogic/DoSubscriptionTierDowngrade.js";
 import {DoCancelTierDowngrade} from "../businessLogic/DoCancelTierDowngrade.js";
 import {DoStartSoloSubscriptionFromUnverified} from "../businessLogic/DoStartSoloSubscriptionFromUnverified.js";
+import {DoAdministrativeTierChange} from "../businessLogic/DoAdministrativeTierChange.js";
 
 export const performAccountEventLogic = async (context) => {
   const { user } = context.params;
@@ -37,6 +38,15 @@ export const performAccountEventLogic = async (context) => {
     case AccountEventTypeMap.startSoloSubscriptionFromUnverified:
       await DoStartSoloSubscriptionFromUnverified(context, user);
       break;
+    case AccountEventTypeMap.administrativeTierChange: {
+      // The only event where the acting user is not the subject: an
+      // administrator changes someone else's tier. The data resolver has
+      // already put the target on data.userId (and refused to do so for
+      // anyone who is not a site administrator).
+      const targetUser = await context.app.service('users').get(context.data.userId.toString());
+      await DoAdministrativeTierChange(context, targetUser, user);
+      break;
+    }
     default:
       context.data.resultMsg = "Business logic for event type not supported yet.";
       break;

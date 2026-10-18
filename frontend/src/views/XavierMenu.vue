@@ -71,6 +71,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         >
           Remove User
         </v-list-item>
+        <v-list-item
+          color="link"
+          class="text-decoration-underline"
+          @click="$router.push({ name: 'XavierSetUserTier', params: {} })"
+        >
+          Set User Tier
+        </v-list-item>
       </v-list>
     </v-card-text>
     <v-card-actions>

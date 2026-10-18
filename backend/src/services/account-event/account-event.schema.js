@@ -14,6 +14,7 @@ import {
 } from "../users/users.subdocs.schema.js";
 import {ObjectId} from "mongodb";
 import {CurrencyType} from "../../currencies.js";
+import {isSiteAdministrator} from "../hooks/administration.js";
 
 // Main data model schema
 export const AccountEventTypeMap = {
@@ -24,6 +25,7 @@ export const AccountEventTypeMap = {
   subscriptionTierDowngrade: 'subscription-tier-downgrade',
   cancelTierDowngrade: 'cancel-tier-downgrade',
   startSoloSubscriptionFromUnverified: 'start-solo-subscription-from-unverified',
+  administrativeTierChange: 'administrative-tier-change',
   // TODO:
   // 'subscription-tier-upgrade'    // the amount needs to be properly pre-computed. make an API for that? to enterprise right now
 }
@@ -37,6 +39,7 @@ export const AccountEventType = StringEnum(
     AccountEventTypeMap.subscriptionTierDowngrade,
     AccountEventTypeMap.cancelTierDowngrade,
     AccountEventTypeMap.startSoloSubscriptionFromUnverified,
+    AccountEventTypeMap.administrativeTierChange,
   ]
 )
 
@@ -86,8 +89,17 @@ export const accountEventDataSchema = Type.Pick(accountEventSchema, [
 export const accountEventDataValidator = getValidator(accountEventDataSchema, dataValidator)
 export const accountEventDataResolver = resolve({
   _id: async () => new ObjectId(),
-  userId: async (_value, _message, context) => {
-    // Associate the record with the id of the authenticated user
+  userId: async (value, _message, context) => {
+    // Associate the record with the id of the authenticated user, except for
+    // administrative events, where a site administrator acts on someone else's
+    // account. Anyone who is not an administrator is pinned to their own id, so
+    // a supplied userId can never be used to reach another account.
+    if (value) {
+      const [isAdmin] = await isSiteAdministrator(context.params, context.app);
+      if (isAdmin) {
+        return new ObjectId(value.toString());
+      }
+    }
     return context.params.user._id
   },
   createdAt: async () => Date.now(),
