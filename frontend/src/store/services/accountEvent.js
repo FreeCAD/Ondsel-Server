@@ -82,6 +82,7 @@ export const AccountEventTypeMap = {
   subscriptionTierUpgrade: 'subscription-tier-upgrade',
   cancelTierDowngrade: 'cancel-tier-downgrade',
   startSoloSubscriptionFromUnverified: 'start-solo-subscription-from-unverified',
+  administrativeTierChange: 'administrative-tier-change',
 }
 
 export const SubscriptionTermTypeMap = {

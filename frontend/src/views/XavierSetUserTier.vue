@@ -81,9 +81,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <script>
 
-import {mapActions} from "vuex";
+import {mapActions, mapState} from "vuex";
 import {models} from "@feathersjs/vuex";
 import {refNameHasher} from "@/refNameFunctions";
+import {AccountEventTypeMap} from "@/store/services/accountEvent";
 import {SubscriptionTypeMap} from "@/store/services/users";
 
 const { User } = models.api;
@@ -112,6 +113,9 @@ export default {
       this.foundUser = null;
       this.lookupError = '';
     },
+  },
+  computed: {
+    ...mapState('auth', ['user']),
   },
   methods: {
     ...mapActions('app', ['isSiteAdministrator']),
@@ -145,12 +149,35 @@ export default {
     },
     async doSetTier() {
       this.isPending = true;
+      const targetUsername = this.foundUser.username;
       const previousTier = this.foundUser.tier;
       try {
-        const result = await User.patch(this.foundUser._id, { tier: this.tier, nextTier: null });
-        this.results = `${result.username}: tier changed from ${previousTier} to ${result.tier}`;
-        this.foundUser = result;
-        this.tier = null;
+        // Go through account-event rather than patching the user directly, so
+        // the change lands in the user's accounting history like every other
+        // tier movement. The server rejects the event unless currentSubscription
+        // still matches, which catches a stale page.
+        const accountEvent = new models.api.AccountEvent();
+        accountEvent.event = AccountEventTypeMap.administrativeTierChange;
+        accountEvent.userId = this.foundUser._id;
+        // Replace the whole detail object rather than setting fields on the
+        // default one: there is no subscription here, so there is no term, and
+        // the empty string instanceDefaults() supplies fails enum validation.
+        accountEvent.detail = {
+          subscription: this.tier,
+          currentSubscription: previousTier,
+        };
+        accountEvent.amount = 0; // $0
+        accountEvent.originalCurrency = 'USD';
+        accountEvent.originalAmt = '0.00';
+        accountEvent.note = `frontend XavierSetUserTier page call by ${this.user.username}`;
+        const result = await accountEvent.create();
+        if (result.success) {
+          this.results = `${targetUsername}: tier changed from ${previousTier} to ${this.tier}\n${result.resultMsg}`;
+          this.tier = null;
+          await this.validateUser();
+        } else {
+          this.results = 'FAILED: ' + result.resultMsg;
+        }
       } catch (e) {
         this.results = 'ERROR: ' + e.toString();
       }
