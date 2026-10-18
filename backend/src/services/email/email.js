@@ -2,9 +2,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import { hooks as schemaHooks } from '@feathersjs/schema'
 import { disallow } from 'feathers-hooks-common'
 import { emailPath } from './email.shared.js'
 import { EmailService } from "./email.class.js";
+import { emailDataResolver, emailDataValidator } from './email.schema.js'
 
 // A configure function that registers the service and its hooks via `app.configure`
 // This service is internal-only: it is called via `app.service('email')` from the server
@@ -45,7 +47,11 @@ export const email = (app) => {
       all: [disallow('external')],
       find: [],
       get: [],
-      create: [],
+      // Internal callers are still limited to a plain notification message.
+      create: [
+        schemaHooks.validateData(emailDataValidator),
+        schemaHooks.resolveData(emailDataResolver),
+      ],
       patch: [],
       remove: []
     },
