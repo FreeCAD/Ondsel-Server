@@ -219,7 +219,7 @@ The workflow utilizes multiple services including:
 - Uploads Service: For storing version files in configured storage backend
 
 ## Model Creation Workflow:
-Models can be created from supported CAD files (file extensions: fcstd, obj, step, stp). The model creation workflow involves:
+Models can be created from supported CAD files (file extensions: fcstd, obj, step, stp, kicad_pcb). The model creation workflow involves:
 
 1. Model Creation:
    - User uploads a supported CAD file to workspace
@@ -235,6 +235,7 @@ Models can be created from supported CAD files (file extensions: fcstd, obj, ste
    - User can update the model attributes using attributes button in right sidebar
    - User can export the model in different file formats from export icon in right sidebar
    - User can set the thumbnail for the model in workspace from thumbnail icon in right sidebar
+   - For KiCad boards, a chip icon in the right sidebar switches to the KiCanvas viewer and back (see [KiCad Support](kicad.md))
 
 3. Model Access:
    - Model inherits access permissions from parent workspace
@@ -261,6 +262,7 @@ Share links allow users to share models with others. The share link workflow inv
    - User provides share link title, private note, protection type (listed, unlisted, pin, direct - desctibed in shared models service), version change handling (current or active) and permissions (view model, view model attributes, update model attributes, allowed export types, etc.)
    - User clicks on GENERATE LINK button to create the share link
    - Share link URL is generated and displayed to user
+   - For KiCad boards, the view model permission also allows opening the board in KiCanvas
 
 2. Managing Share Links:
    - User can view all share links listed in share link dialog opened from model explore page
