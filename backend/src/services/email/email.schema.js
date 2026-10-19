@@ -11,21 +11,23 @@ import { dataValidator } from '../../validators.js'
 // rejects `attachments` and `raw`, which make nodemailer read from disk or
 // fetch a URL, and `cc`/`bcc`.
 //
-// The address formats reject a CR/LF, which nodemailer would otherwise parse
-// as an address group, putting the injected address in the SMTP envelope and
-// delivering there instead. The subject is deliberately unconstrained: a
-// newline in it is folded to a space by nodemailer and cannot inject a header,
-// while subjects interpolate an organization name and the site title, so
-// rejecting one would silently stop a legitimate email.
+// Recipients are checked only for CR/LF, not for a strict address shape:
+// nodemailer parses a line break as an address group and the SMTP envelope
+// follows it, so a CR/LF would redirect delivery, but a display-name address
+// such as `Joe Bob <joe@example.com>` is legitimate and must still work. The
+// subject is left unconstrained for the same reason: a newline there is folded
+// to a space and cannot inject a header, while subjects interpolate an
+// organization name and the site title, so rejecting one would silently stop a
+// legitimate email.
+const noLineBreak = { pattern: '^[^\\r\\n]*$' }
+
 export const emailDataSchema = Type.Object(
   {
-    // Sent by the existing callers; overwritten by emailDataResolver.
-    from: Type.Optional(Type.String({ format: 'email' })),
-    to: Type.Union([
-      Type.String({ format: 'email' }),
-      Type.Array(Type.String({ format: 'email' }), { minItems: 1 }),
-    ]),
-    replyTo: Type.Optional(Type.String({ format: 'email' })),
+    // Sent by the existing callers but always overwritten by emailDataResolver,
+    // so it is accepted without validation rather than rejected.
+    from: Type.Optional(Type.String()),
+    to: Type.String(noLineBreak),
+    replyTo: Type.Optional(Type.String(noLineBreak)),
     subject: Type.String(),
     text: Type.Optional(Type.String()),
     html: Type.Optional(Type.String()),

@@ -67,12 +67,15 @@ describe('email service', () => {
       }
     })
 
+    // `from` is not validated (a display-name address must be accepted, e.g.
+    // when SMTP_FROM is configured as "Ondsel Lens <no-reply@...>") and is
+    // always overwritten with the configured sender regardless.
     it('pins the sender to the configured address', async () => {
       const service = app.service('email')
       const restore = stubTransport(service)
       try {
         const result = await service.create({
-          from: 'spoofed-sender@example.org',
+          from: 'Spoofed Name <spoofed-sender@example.org>',
           to: 'user@example.com',
           subject: 'Spoof attempt',
           text: 'x',
@@ -159,15 +162,21 @@ describe('email service', () => {
       )
     })
 
-    it('refuses a malformed recipient address', async () => {
-      await assert.rejects(
-        () => app.service('email').create({
-          to: 'not-an-email',
+    // A display-name address is legitimate and must still deliver to the
+    // bare address, not be rejected by an over-strict format check.
+    it('allows a display-name recipient and delivers to the bare address', async () => {
+      const service = app.service('email')
+      const restore = stubTransport(service)
+      try {
+        const result = await service.create({
+          to: 'Joe Bob <joe_bob@example.com>',
           subject: 'x',
           text: 'x',
-        }),
-        { name: 'BadRequest' }
-      )
+        })
+        assert.deepStrictEqual(result.envelope.to, ['joe_bob@example.com'])
+      } finally {
+        restore()
+      }
     })
 
     it('requires a recipient and a body', async () => {
