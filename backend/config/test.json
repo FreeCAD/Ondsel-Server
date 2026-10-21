@@ -1,3 +1,5 @@
 {
-  "port": 8998
+  "port": 8998,
+  "backendUrl": "http://localhost:8998/",
+  "smtpFrom": "no-reply@test.invalid"
 }
