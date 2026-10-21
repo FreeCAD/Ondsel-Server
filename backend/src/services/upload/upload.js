@@ -4,12 +4,49 @@
 
 import dauria from 'dauria';
 import { authenticate } from '@feathersjs/authentication';
-import { iff } from 'feathers-hooks-common';
 
 import { getUploadService, multipartMiddleware } from './upload.class.js'
 import { uploadPath, uploadMethods } from './upload.shared.js'
+import { ProtectionTypeMap } from '../shared-models/shared-models.subdocs.schema.js'
 
 export * from './upload.class.js'
+
+// Anonymous visitors to a share link can download the shared model's original file (if the share allows it).
+// Every other call must be authenticated. See GHSA-w8rq-5vjv-8w86.
+export const isAnonymousSharedModelDownload = async (context) => {
+  const { method, id, params, app } = context;
+  const query = params.query || {};
+  if (method !== 'get' || !query.modelId || query.fileContent) {
+    return false;
+  }
+
+  let fileName, model, sharedModel;
+  try {
+    fileName = decodeURIComponent(id);
+    model = await app.service('models').get(query.modelId);
+    if (!model.isSharedModel || !model.sharedModelId) {
+      return false;
+    }
+    sharedModel = await app.service('shared-models').get(model.sharedModelId);
+  } catch (e) {
+    // Whatever terrible thing happened, reject the attempt
+    return false;
+  }
+
+  if (!sharedModel.isActive || !sharedModel.canViewModel || !sharedModel.canDownloadDefaultModel) {
+    return false;
+  }
+  const protection = sharedModel.protection;
+  const isProtectionSatisfied =
+    protection === ProtectionTypeMap.listed ||
+    protection === ProtectionTypeMap.unlisted ||
+    (protection === ProtectionTypeMap.pin && typeof query.pin === 'string' && query.pin === sharedModel.pin);
+  if (!isProtectionSatisfied) {
+    return false;
+  }
+
+  return fileName === model.uniqueFileName;
+}
 
 // A configure function that registers the service and its hooks via `app.configure`
 export const upload = (app) => {
@@ -111,19 +148,12 @@ export const upload = (app) => {
     },
     before: {
       all: [
-        iff (
-          context => context.params.query?.modelId,
-          iff (
-            async (context) => {
-              const modelId = context.params.query?.modelId
-              const model = await context.app.service('models').get(modelId);
-              return !model.isSharedModel
-            },
-            authenticate('jwt'),
-          ),
-        ).else (
-          authenticate('jwt'),
-        ),
+        async (context) => {
+          if (await isAnonymousSharedModelDownload(context)) {
+            return context;
+          }
+          return authenticate('jwt')(context);
+        },
       ],
       find: [],
       get: [],

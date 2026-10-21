@@ -218,6 +218,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     :is-active="isExportModelDialogActive"
     :shared-model="sharedModel"
     :shared-model-sub-model="model"
+    :shared-model-pin="pin"
     ref="exportModelDialog"
     @update-model="updateModel"
   />
