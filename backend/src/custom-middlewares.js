@@ -13,6 +13,7 @@ import {
   createUserEngagementEntryForPublisherDownload,
   createUserEngagementEntryForStatusEndpoint,
 } from "./services/hooks/userEngagements.js";
+import { resolveInsideDirectory } from './services/upload/upload.class.js';
 
 function rot13rot5(str) {
   // ========== from chatGPT:
@@ -130,7 +131,8 @@ function handleLocalFileDownload(app) {
           return res.status(403).json({ error: 'URL is invalid or expired!' });
         }
 
-        if (fs.existsSync(path.join('uploads', fileName))) {
+        const filePath = resolveInsideDirectory('uploads', fileName);
+        if (filePath && fs.existsSync(filePath)) {
           // Set appropriate headers for file download
           res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
           res.setHeader('Content-Type', 'application/octet-stream');
@@ -154,7 +156,8 @@ function handlePublicBrandingFileDownload(app) {
         const { fileName } = req.params;
 
         const folderPath = path.join('uploads', 'public', 'branding');
-        if (fs.existsSync(path.join(folderPath, fileName))) {
+        const filePath = resolveInsideDirectory(folderPath, fileName);
+        if (filePath && fs.existsSync(filePath)) {
           res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
           res.sendFile(fileName, { root: folderPath });
         } else {
