@@ -21,12 +21,19 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         location="start"
       >Get Info</v-tooltip>
     </v-btn>
-    <v-btn icon flat @click="fitModelToScreen">
+    <v-btn icon flat :disabled="activeViewer !== '3d'" @click="fitModelToScreen">
       <v-icon>mdi-crop-free</v-icon>
       <v-tooltip
         activator="parent"
         location="start"
       >Fit all or selection</v-tooltip>
+    </v-btn>
+    <v-btn v-if="showKicanvasToggle" icon flat @click="toggleViewer">
+      <v-icon>{{ activeViewer === 'kicanvas' ? 'mdi-cube-outline' : 'mdi-chip' }}</v-icon>
+      <v-tooltip
+        activator="parent"
+        location="start"
+      >{{ activeViewer === 'kicanvas' ? 'Show 3D model' : 'Show board in KiCanvas' }}</v-tooltip>
     </v-btn>
     <v-btn icon flat @click="openAttributeViewer">
       <v-icon>mdi-view-list</v-icon>
@@ -49,7 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         location="start"
       >Export model</v-tooltip>
     </v-btn>
-    <v-btn icon flat :disabled="!user" @click="uploadThumbnail(true)">
+    <v-btn icon flat :disabled="!user || activeViewer !== '3d'" @click="uploadThumbnail(true)">
       <v-icon>mdi-camera</v-icon>
       <v-tooltip
         activator="parent"
@@ -72,8 +79,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       >Open model in {{ siteConfig?.desktopApp?.name }} desktop app</v-tooltip>
     </v-btn> -->
   </v-navigation-drawer>
-  <ModelViewer ref="modelViewer" @model:loaded="modelLoaded" @object:clicked="objectClicked"/>
-  <ObjectsListView ref="objectListView" :model="model" @select-given-object="objectSelected" />
+  <div v-show="activeViewer === '3d'">
+    <ModelViewer ref="modelViewer" @model:loaded="modelLoaded" @object:clicked="objectClicked"/>
+    <ObjectsListView ref="objectListView" :model="model" @select-given-object="objectSelected" />
+  </div>
+  <KicanvasViewer v-if="activeViewer === 'kicanvas'" :src="model.kicadFileUrl" />
   <div class="text-center">
     <v-dialog
       v-model="dialog"
@@ -264,6 +274,7 @@ import AttributeViewer from '@/components/AttributeViewer';
 import ExportModelDialog from '@/components/ExportModelDialog';
 import MangeSharedModels from '@/components/MangeSharedModels';
 import ModelInfo from '@/components/ModelInfo.vue';
+import KicanvasViewer from '@/components/KicanvasViewer.vue';
 import ObjectsListView from '@/components/ObjectsListView.vue';
 import openDesktopAppMixin from '@/mixins/openDesktopAppMixin';
 import LaunchDesktopAppDialog from '@/components/LaunchDesktopAppDialog.vue';
@@ -279,6 +290,7 @@ export default {
     ModelViewer,
     ExportModelDialog,
     ModelInfo,
+    KicanvasViewer,
     ObjectsListView,
     LaunchDesktopAppDialog,
     RunScriptPanel,
@@ -300,6 +312,7 @@ export default {
     runScriptDrawerWidth: 650,
     generatePublicLinkValue: null,
     viewer: null,
+    activeViewer: '3d',
   }),
   mounted() {
     new Dropzone(this.$refs.dropzone, this.dropzoneOptions);
@@ -334,6 +347,7 @@ export default {
     ...mapGetters('app', ['siteConfig']),
     canHaveWriteAccess: vm => vm.workspace ? vm.workspace.haveWriteAccess : false,
     kicadEnabled: vm => !!vm.siteConfig?.kicad?.enabled,
+    showKicanvasToggle: vm => !!vm.model?.kicadFileUrl,
     workspace: vm => vm.model && vm.model.file && Workspace.getFromStore(vm.model.file.workspace._id),
     organization: vm => vm.workspace && Organization.getFromStore(vm.workspace.organizationId),
     dropzoneOptions() {
@@ -443,6 +457,9 @@ export default {
   methods: {
     fitModelToScreen() {
       this.$refs.modelViewer.fitModelToScreen();
+    },
+    toggleViewer() {
+      this.activeViewer = this.activeViewer === '3d' ? 'kicanvas' : '3d';
     },
     openAttributeViewer() {
       this.$refs.attributeViewer.$data.dialog = true;

@@ -1,5 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
@@ -20,12 +21,19 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         location="start"
       >Get Info</v-tooltip>
     </v-btn>
-    <v-btn icon flat @click="fitModelToScreen">
+    <v-btn icon flat :disabled="activeViewer !== '3d'" @click="fitModelToScreen">
       <v-icon>mdi-crop-free</v-icon>
       <v-tooltip
         activator="parent"
         location="start"
       >Fit all or selection</v-tooltip>
+    </v-btn>
+    <v-btn v-if="showKicanvasToggle" icon flat @click="toggleViewer">
+      <v-icon>{{ activeViewer === 'kicanvas' ? 'mdi-cube-outline' : 'mdi-chip' }}</v-icon>
+      <v-tooltip
+        activator="parent"
+        location="start"
+      >{{ activeViewer === 'kicanvas' ? 'Show 3D model' : 'Show board in KiCanvas' }}</v-tooltip>
     </v-btn>
     <v-btn icon flat @click="openAttributeViewer" v-if="sharedModel && (sharedModel.canViewModelAttributes || sharedModel.canUpdateModel)">
       <v-icon>mdi-view-list</v-icon>
@@ -115,8 +123,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       >Open model in {{ siteConfig?.desktopApp?.name }} desktop app</v-tooltip>
     </v-btn>
   </v-navigation-drawer>
-  <ModelViewer ref="modelViewer" :full-screen="isWindowLoadedInIframe" @model:loaded="modelLoaded" @object:clicked="objectClicked"/>
-  <ObjectsListView v-if="!isWindowLoadedInIframe" ref="objectListView" @select-given-object="objectSelected" />
+  <div v-show="activeViewer === '3d'">
+    <ModelViewer ref="modelViewer" :full-screen="isWindowLoadedInIframe" @model:loaded="modelLoaded" @object:clicked="objectClicked"/>
+    <ObjectsListView v-if="!isWindowLoadedInIframe" ref="objectListView" @select-given-object="objectSelected" />
+  </div>
+  <KicanvasViewer v-if="activeViewer === 'kicanvas'" :src="model.kicadFileUrl" />
   <div class="text-center">
     <v-dialog
       v-model="dialog"
@@ -267,6 +278,7 @@ import { mapState, mapGetters } from 'vuex';
 import { models } from '@feathersjs/vuex';
 
 import ModelViewer from "@/components/ModelViewer";
+import KicanvasViewer from "@/components/KicanvasViewer.vue";
 import AttributeViewer from '@/components/AttributeViewer';
 import ExportModelDialog from '@/components/ExportModelDialog';
 import ShareLinkDialog from '@/components/ShareLinkDialog';
@@ -292,6 +304,7 @@ export default {
     ShareLinkDialog,
     AttributeViewer,
     ModelViewer,
+    KicanvasViewer,
     ExportModelDialog,
     SharedModelInfo,
     ObjectsListView,
@@ -316,6 +329,7 @@ export default {
     drawerActiveWindow: null,
     pin: null,
     sharedModelId: null,
+    activeViewer: '3d',
   }),
   async created() {
     this.sharedModelId = this.$route.params.id;
@@ -330,6 +344,7 @@ export default {
     ...mapGetters('app', ['siteConfig', 'selfPronoun', 'selfName', 'currentOrganization']),
     isWindowLoadedInIframe: (vm) => vm.$route.meta.isWindowLoadedInIframe,
     hasBasicRights: (vm) => vm.isAuthenticated && vm.user?.tier !== undefined && vm.user?.tier !== 'Unverified',
+    showKicanvasToggle: vm => !!vm.model?.kicadFileUrl && vm.sharedModel?.canViewModel,
     title: (vm) => `${vm.sharedModel?.title || ''} - ${vm.siteConfig?.siteTitle}`,
   },
   methods: {
@@ -387,6 +402,9 @@ export default {
     },
     fitModelToScreen() {
       this.$refs.modelViewer.fitModelToScreen();
+    },
+    toggleViewer() {
+      this.activeViewer = this.activeViewer === '3d' ? 'kicanvas' : '3d';
     },
     openAttributeViewer() {
       this.$refs.attributeViewer.$data.dialog = true;
