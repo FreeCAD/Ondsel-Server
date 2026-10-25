@@ -84,6 +84,7 @@ export default {
     model: Object,
     sharedModel: Object,
     sharedModelSubModel: Object,  // refs: sharedModel.model
+    sharedModelPin: String,  // the PIN entered for a PIN-protected share, needed for anonymous download
     organizationConstraints: {
       type: Object,
       default: null
@@ -200,7 +201,10 @@ export default {
         {
           method: 'GET',
           url: fileEndpoint,
-          params: this.sharedModel ? { modelId: model._id.toString()} : {},
+          params: this.sharedModel ? {
+            modelId: model._id.toString(),
+            ...(this.sharedModelPin && { pin: this.sharedModelPin }),
+          } : {},
           headers: {
             Authorization: `Bearer ${this.accessToken}`
           }
