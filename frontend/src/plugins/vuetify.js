@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -16,6 +17,7 @@ import '@/styles/main.scss'
 import { createVuetify } from 'vuetify';
 import * as components from 'vuetify/components'
 import * as labsComponents from 'vuetify/labs/components'
+import { aliases, mdi } from 'vuetify/iconsets/mdi'
 
 import { getThemePreference, resolveActiveTheme } from '@/themePreference'
 
@@ -69,5 +71,14 @@ export default createVuetify({
   },
   components: {
     ...components, ...labsComponents
-  }
+  },
+  icons: {
+    defaultSet: 'mdi',
+    aliases: {
+      ...aliases,
+      // mdi-dock-left with the left pane left empty
+      dockLeftOutline: 'svg:M20 4H4A2 2 0 0 0 2 6V18A2 2 0 0 0 4 20H20A2 2 0 0 0 22 18V6A2 2 0 0 0 20 4M20 18H9V6H20ZM7 18H4V6H7Z',
+    },
+    sets: { mdi },
+  },
 })
