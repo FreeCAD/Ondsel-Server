@@ -10,6 +10,7 @@ import store from '@/store'
 import Home from "@/views/Home";
 import SignUp from "@/views/SignUp";
 import OAuthComplete from "@/views/OAuthComplete.vue";
+import DesktopLogin from '@/views/DesktopLogin.vue'
 import ChooseTier from "@/views/ChooseTier.vue";
 import Login from '@/views/Login';
 import Share from '@/views/Share';
@@ -115,6 +116,15 @@ const routes = [
     component: OAuthComplete,
     name: 'OAuthComplete',
     meta: { tryAuth: true },
+  },
+  {
+    // Entry point for the FreeCAD addon's browser sign-in. requiresAuth lets the
+    // global guard send an anonymous visitor through Login with a redirect_uri
+    // back to here, so any provider the instance offers can be used.
+    path: '/desktop-login',
+    component: DesktopLogin,
+    name: 'DesktopLogin',
+    meta: { requiresAuth: true },
   },
   {
     path: '/getting-started',
