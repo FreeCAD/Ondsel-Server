@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         location="start"
       >{{ activeViewer === 'kicanvas' ? 'Show 3D model' : 'Show board in KiCanvas' }}</v-tooltip>
     </v-btn>
-    <v-btn icon flat @click="openAttributeViewer">
+    <v-btn v-if="showAttributeViewerButton" icon flat @click="openAttributeViewer">
       <v-icon>mdi-view-list</v-icon>
       <v-tooltip
         activator="parent"
@@ -347,7 +347,10 @@ export default {
     ...mapGetters('app', ['siteConfig']),
     canHaveWriteAccess: vm => vm.workspace ? vm.workspace.haveWriteAccess : false,
     kicadEnabled: vm => !!vm.siteConfig?.kicad?.enabled,
-    showKicanvasToggle: vm => !!vm.model?.kicadFileUrl,
+    showKicanvasToggle: vm => vm.isKicadModel,
+    isKicadModel: vm => !!vm.model?.kicadFileUrl,
+    hasAttributes: vm => Object.keys(vm.model?.attributes || {}).length > 0,
+    showAttributeViewerButton: vm => vm.hasAttributes || !vm.isKicadModel,
     workspace: vm => vm.model && vm.model.file && Workspace.getFromStore(vm.model.file.workspace._id),
     organization: vm => vm.workspace && Organization.getFromStore(vm.workspace.organizationId),
     dropzoneOptions() {

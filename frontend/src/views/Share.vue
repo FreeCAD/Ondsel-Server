@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         location="start"
       >{{ activeViewer === 'kicanvas' ? 'Show 3D model' : 'Show board in KiCanvas' }}</v-tooltip>
     </v-btn>
-    <v-btn icon flat @click="openAttributeViewer" v-if="sharedModel && (sharedModel.canViewModelAttributes || sharedModel.canUpdateModel)">
+    <v-btn icon flat @click="openAttributeViewer" v-if="sharedModel && (sharedModel.canViewModelAttributes || sharedModel.canUpdateModel) && showAttributeViewerButton">
       <v-icon>mdi-view-list</v-icon>
       <v-tooltip
         activator="parent"
@@ -344,7 +344,10 @@ export default {
     ...mapGetters('app', ['siteConfig', 'selfPronoun', 'selfName', 'currentOrganization']),
     isWindowLoadedInIframe: (vm) => vm.$route.meta.isWindowLoadedInIframe,
     hasBasicRights: (vm) => vm.isAuthenticated && vm.user?.tier !== undefined && vm.user?.tier !== 'Unverified',
-    showKicanvasToggle: vm => !!vm.model?.kicadFileUrl && vm.sharedModel?.canViewModel,
+    showKicanvasToggle: vm => vm.isKicadModel && vm.sharedModel?.canViewModel,
+    isKicadModel: vm => !!vm.model?.kicadFileUrl,
+    hasAttributes: vm => Object.keys(vm.model?.attributes || {}).length > 0,
+    showAttributeViewerButton: vm => vm.hasAttributes || !vm.isKicadModel,
     title: (vm) => `${vm.sharedModel?.title || ''} - ${vm.siteConfig?.siteTitle}`,
   },
   methods: {
