@@ -79,11 +79,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       >Open model in {{ siteConfig?.desktopApp?.name }} desktop app</v-tooltip>
     </v-btn> -->
   </v-navigation-drawer>
-  <div v-show="activeViewer === '3d'">
+  <div v-show="activeViewer === '3d' || !isKicanvasLoaded">
     <ModelViewer ref="modelViewer" @model:loaded="modelLoaded" @object:clicked="objectClicked"/>
     <ObjectsListView ref="objectListView" :model="model" @select-given-object="objectSelected" />
   </div>
-  <KicanvasViewer v-if="activeViewer === 'kicanvas'" :src="model.kicadFileUrl" />
+  <KicanvasViewer v-if="activeViewer === 'kicanvas'" :src="model.kicadFileUrl" @loaded="isKicanvasLoaded = true" />
   <div class="text-center">
     <v-dialog
       v-model="dialog"
@@ -313,6 +313,7 @@ export default {
     generatePublicLinkValue: null,
     viewer: null,
     activeViewer: '3d',
+    isKicanvasLoaded: false,
   }),
   mounted() {
     new Dropzone(this.$refs.dropzone, this.dropzoneOptions);
@@ -463,6 +464,7 @@ export default {
     },
     toggleViewer() {
       this.activeViewer = this.activeViewer === '3d' ? 'kicanvas' : '3d';
+      this.isKicanvasLoaded = false;
     },
     openAttributeViewer() {
       this.$refs.attributeViewer.$data.dialog = true;
