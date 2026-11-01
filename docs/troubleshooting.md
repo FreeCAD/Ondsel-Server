@@ -294,7 +294,7 @@ See [KiCad Support](kicad.md) for background.
    docker-compose logs fc-worker-celery | grep "KiCad 3D models missing"
    ```
 
-2. **Project-folder models**: models referenced as `${KIPRJMOD}/...` are not uploaded because only the `.kicad_pcb` is uploaded. Embed the models in the board or use library models.
+2. **Project-folder models**: models referenced as `${KIPRJMOD}/...` are loaded from the board's Lens folder. Upload them with the same folder names and file names as in the project, then press **Recompute** on the notice on the model page. This needs the Peer tier or above, like linked assemblies.
 
 3. **WRL-only models**: models without a STEP file are left out.
 

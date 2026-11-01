@@ -41,6 +41,8 @@ KiCanvas shows the board as KiCad draws it, with layers, footprints, nets, and p
 2. Click the chip icon in the right toolbar to switch to KiCanvas.
 3. Click the cube icon to switch back to the 3D viewer.
 
+Upload the project's `.kicad_sch` and `.kicad_pro` files into the same folder as the board and KiCanvas also shows the schematics, with a page switcher for hierarchical sheets.
+
 ### Share links
 
 On a share link, the KiCanvas switch appears when the link has **Can view model** enabled. KiCanvas reads the original `.kicad_pcb` file, so viewers of the link can read the board's layout and nets.
@@ -53,15 +55,31 @@ Exports and Run Script use the converted FreeCAD model, so you can export the bo
 
 ---
 
-## Missing components
+## Component models
 
-A component is left out of the converted board when Lens cannot find its 3D model. This happens when:
+Lens places a component's 3D model when it finds the model in one of these places:
 
-- the model is to be loaded from the KiCad project folder (`${KIPRJMOD}`), but only the `.kicad_pcb` file is uploaded;
-- the model comes from a library other than the official KiCad library;
-- the model only has a WRL file and no STEP file.
+- the official KiCad 3D model library
+- the board file itself, for models embedded in it
+- the board's folder in Lens, for models kept in the KiCad project folder
 
-Models embedded in the board file do work. A missing model does not stop the board from converting. Site administrators can find the exact missing models in the worker log, see [KiCad Issues](troubleshooting.md#kicad-issues).
+### Models in the project folder
+
+Models referenced as `${KIPRJMOD}/...`, or by a plain relative path, are loaded from the board's folder in Lens. Upload them with the same folder names and file names as in the project. For example, a board referencing `${KIPRJMOD}/3d_lib/J1.step` expects a `3d_lib` folder with `J1.step` next to the board.
+
+- Like linked FreeCAD assemblies, this needs the Peer tier or above.
+- If you upload the models after the board, press **Recompute** on the missing-model notice. The page reloads when the new model is ready.
+- Components placed from these models show an open icon in the object list, which leads to the model file in Lens.
+
+### Missing models
+
+A component is left out when its model is not found:
+
+- it is a project model that was not uploaded
+- it comes from a library other than the official KiCad library
+- it only has a WRL file and no STEP file
+
+The board still converts. The model page shows a notice with the number of affected components, and hovering it lists the designators and model path of each.
 
 ---
 
