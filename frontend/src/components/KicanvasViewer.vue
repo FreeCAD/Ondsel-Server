@@ -138,8 +138,8 @@ export default {
   name: 'KicanvasViewer',
   emits: ['loaded'],
   props: {
-    src: {
-      type: String,
+    files: {
+      type: Array,
       required: true,
     },
   },
@@ -159,7 +159,7 @@ export default {
     this.resizeObserver.disconnect();
   },
   watch: {
-    async src() {
+    async files() {
       await this.render();
     },
     '$vuetify.theme.global.name'() {
@@ -194,10 +194,20 @@ export default {
         this.$emit('loaded');
       }
     },
+    async loadSources() {
+      return Promise.all(this.files.map(async file => {
+        const res = await fetch(file.url);
+        if (!res.ok) {
+          throw new Error(`Failed to load ${file.name}.`);
+        }
+        return { name: file.name, text: await res.text() };
+      }));
+    },
     async render() {
       this.isLoaded = false;
+      let sources;
       try {
-        await loadBundle();
+        [, sources] = await Promise.all([loadBundle(), this.loadSources()]);
       } catch (e) {
         this.snackerMsg = e.message;
         this.showSnacker = true;
@@ -211,9 +221,13 @@ export default {
         this.isLoaded = true;
       });
       embed.style.cssText = 'width: 100%; height: 100%; max-height: 100%; aspect-ratio: auto; background-color: transparent;';
-      const source = document.createElement('kicanvas-source');
-      source.setAttribute('src', this.src);
-      embed.appendChild(source);
+      // Inline sources keep the real file names, which hierarchical sheets refer to.
+      for (const { name, text } of sources) {
+        const source = document.createElement('kicanvas-source');
+        source.setAttribute('name', name);
+        source.textContent = text;
+        embed.appendChild(source);
+      }
       container.appendChild(embed);
       this.applyTheme();
     },

@@ -83,7 +83,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <ModelViewer ref="modelViewer" @model:loaded="modelLoaded" @object:clicked="objectClicked"/>
     <ObjectsListView ref="objectListView" :model="model" @select-given-object="objectSelected" />
   </div>
-  <KicanvasViewer v-if="activeViewer === 'kicanvas'" :src="model.kicadFileUrl" @loaded="isKicanvasLoaded = true" />
+  <KicanvasViewer v-if="activeViewer === 'kicanvas'" :files="model.kicadProjectFiles" @loaded="isKicanvasLoaded = true" />
   <ModelWarnings
     v-if="model"
     :warnings="model.generationWarnings"
@@ -359,7 +359,7 @@ export default {
     canHaveWriteAccess: vm => vm.workspace ? vm.workspace.haveWriteAccess : false,
     kicadEnabled: vm => !!vm.siteConfig?.kicad?.enabled,
     showKicanvasToggle: vm => vm.isKicadModel,
-    isKicadModel: vm => !!vm.model?.kicadFileUrl,
+    isKicadModel: vm => !!vm.model?.kicadProjectFiles?.length,
     hasAttributes: vm => Object.keys(vm.model?.attributes || {}).length > 0,
     showAttributeViewerButton: vm => vm.hasAttributes || !vm.isKicadModel,
     workspace: vm => vm.model && vm.model.file && Workspace.getFromStore(vm.model.file.workspace._id),

@@ -11,7 +11,7 @@ import { dataValidator, queryValidator } from '../../validators.js'
 import { userSchema } from '../users/users.schema.js'
 import { fileSchema } from '../file/file.schema.js';
 import { NotFound } from '@feathersjs/errors'
-import {removePrivateFileFields} from "../file/helpers.js";
+import {removePrivateFileFields, getKicadProjectFiles} from "../file/helpers.js";
 
 export const logErrorIdType = Type.Optional(Type.Union([ObjectIdSchema(), Type.Null()]))
 
@@ -45,7 +45,7 @@ export const modelSchema = Type.Object(
     errorMsg: Type.Optional(Type.Union([errorMsgType, Type.Null()])),
     generationWarnings: Type.Optional(Type.Union([Type.Object({}), Type.Null()])),
     objUrl: Type.String(),
-    kicadFileUrl: Type.Optional(Type.String()),
+    kicadProjectFiles: Type.Optional(Type.Array(Type.Object({ name: Type.String(), url: Type.String() }))),
     isSharedModel: Type.Optional(Type.Boolean({default: false})),
     isThumbnailGenerated: Type.Optional(Type.Boolean({default: false})),
     thumbnailUrl: Type.String(),
@@ -142,26 +142,26 @@ export const modelResolver = resolve({
       }
     }
   }),
-  kicadFileUrl: virtual(async (message, context) => {
-    if (!context.app.get('kicadEnabled')) {
+  kicadProjectFiles: virtual(async (message, context) => {
+    const { app } = context;
+    if (!app.get('kicadEnabled') || !message.fileId) {
       return undefined;
     }
-    let fileName = message.uniqueFileName;
-    if (!fileName && message.fileId) {
-      try {
-        const file = await context.app.service('file').get(message.fileId);
-        fileName = file.currentVersion.uniqueFileName;
-      } catch (error) {
-        if (!(error instanceof NotFound)) {
-          throw error;
-        }
+    let file;
+    try {
+      file = await app.service('file').get(message.fileId);
+    } catch (error) {
+      if (error instanceof NotFound) {
+        return undefined;
       }
+      throw error;
     }
-    if (!fileName || !fileName.toUpperCase().endsWith('.KICAD_PCB')) {
+    const boardName = file.currentVersion?.uniqueFileName;
+    if (!boardName || !boardName.toUpperCase().endsWith('.KICAD_PCB')) {
       return undefined;
     }
-    const r = await context.app.service('upload').get(fileName);
-    return r.url || '';
+    // a share link shares the board, not the rest of the project
+    return getKicadProjectFiles(app, file, !message.isSharedModel);
   }),
   haveWriteAccess: virtual(async (_message, context) => {
     return !context.$isModelBelongsToOpenWorkspace;
@@ -221,7 +221,7 @@ export const modelDataResolver = resolve({
   },
 })
 
-export const modelPublicFields = ['_id', 'isObjGenerated', 'objUrl', 'kicadFileUrl'];
+export const modelPublicFields = ['_id', 'isObjGenerated', 'objUrl', 'kicadProjectFiles'];
 
 // Schema for updating existing entries
 export const modelPatchSchema = Type.Partial(modelSchema, {

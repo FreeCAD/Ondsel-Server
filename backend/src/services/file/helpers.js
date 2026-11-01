@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -239,4 +240,24 @@ export function GetUrlFromFileLatestVersion(fileDetail) {
     url = currentVersion.thumbnailUrlCache;
   }
   return url;
+}
+
+const kicadProjectFileRegex = /\.(kicad_pcb|kicad_sch|kicad_pro|kicad_wks)$/i;
+
+// The file plus, unless withSiblings is false, the other KiCad project files in its directory, as signed URLs.
+export async function getKicadProjectFiles(app, file, withSiblings = true) {
+  const entries = [[file.custFileName, file.currentVersion.uniqueFileName]];
+  if (withSiblings && file.directory?._id) {
+    const directory = await app.service('directories').get(file.directory._id);
+    for (const sibling of directory.files) {
+      if (sibling._id.toString() !== file._id.toString() && kicadProjectFileRegex.test(sibling.custFileName || '')) {
+        entries.push([sibling.custFileName, sibling.currentVersion.uniqueFileName]);
+      }
+    }
+  }
+  const upload = app.service('upload');
+  return Promise.all(entries.map(async ([name, uniqueFileName]) => ({
+    name,
+    url: (await upload.get(uniqueFileName)).url || '',
+  })));
 }
