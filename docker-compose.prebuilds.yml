@@ -67,18 +67,32 @@ services:
       - backend
       - fc-worker-redis
 
+  kicad-3dmodels:
+    image: amrit3701/lens:fc-worker-celery-latest
+    command: ["sh", "scripts/fetch-kicad-3dmodels.sh", "/usr/share/kicad/3dmodels"]
+    restart: "no"
+    volumes:
+      - ${KICAD_3DMODELS_VOLUME:-kicad_3dmodels}:/usr/share/kicad/3dmodels
+
   fc-worker-celery:
     image: amrit3701/lens:fc-worker-celery-latest
     environment:
       - REDIS_HOST=fc-worker-redis
       - REDIS_PORT=6379
       - BACKEND_URL=${BACKEND_URL:-http://localhost:3030}
+      - KICAD_3D_LIBRARIES=/usr/share/kicad/3dmodels
+    volumes:
+      - ${KICAD_3DMODELS_VOLUME:-kicad_3dmodels}:/usr/share/kicad/3dmodels
     # bubblewrap (RUN_CODE_SNIPPET sandbox) needs CAP_SYS_ADMIN + writable cgroup.
     privileged: true
     network_mode: "service:backend"
     depends_on:
-      - backend
-      - fc-worker-redis
+      backend:
+        condition: service_started
+      fc-worker-redis:
+        condition: service_started
+      kicad-3dmodels:
+        condition: service_completed_successfully
 
   matomo-db:
     profiles:
@@ -123,4 +137,6 @@ volumes:
   matomo_db:
     name: matomo_db
   matomo_data:
-    name: matomo_data 
+    name: matomo_data
+  kicad_3dmodels:
+    name: kicad_3dmodels 

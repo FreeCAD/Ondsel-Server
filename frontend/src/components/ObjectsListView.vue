@@ -16,8 +16,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     height="90%"
     density="compact"
     select-strategy="single-independent"
-    style="position: absolute; top: 70px; background: transparent;"
+    style="position: absolute; top: 70px; max-width: 25%; background: transparent;"
   >
+    <template v-slot:title="{ item }">
+      <span class="object-title" :title="item.title">{{ item.title }}</span>
+    </template>
     <template v-slot:prepend="{ item, open }">
       <v-checkbox v-model="selectedObjects[item.uuid]" density="compact" hide-details @click.stop="objectSelected(item)"/>
       <v-btn
@@ -135,5 +138,10 @@ export default {
 </script>
 
 <style scoped>
-
+.object-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 </style>
