@@ -1,5 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
@@ -120,7 +121,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               class="text-left"
               v-else-if="error === 'InvalidFileType'"
             >
-              <span>Only *.FCStd, *.STEP/STP, *.OBJ and *.kicad_pcb files accepted.</span>
+              <span>Only *.FCStd, *.STEP/STP, *.OBJ{{ kicadEnabled ? ', *.kicad_pcb' : '' }} files accepted.</span>
             </v-alert>
             <v-alert
               variant="outlined"
@@ -184,7 +185,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <div class="text-h6 mt-6">
                   <v-icon icon="mdi-cloud-upload"></v-icon> Drag file to upload or <v-btn id="dropzone-click-target">BROWSE</v-btn>
                 </div>
-                <div class="text-caption mt-2 mb-6">Allowed extensions: FCSTD, STEP, STP, OBJ, KICAD_PCB</div>
+                <div class="text-caption mt-2 mb-6">Allowed extensions: FCSTD, STEP, STP, OBJ{{ kicadEnabled ? ', KICAD_PCB' : '' }}</div>
                 <div class="d-flex justify-center">
                   <div>
                     <v-checkbox
@@ -332,6 +333,7 @@ export default {
     ...mapGetters('auth', ['isAuthenticated']),
     ...mapGetters('app', ['siteConfig']),
     canHaveWriteAccess: vm => vm.workspace ? vm.workspace.haveWriteAccess : false,
+    kicadEnabled: vm => !!vm.siteConfig?.kicad?.enabled,
     workspace: vm => vm.model && vm.model.file && Workspace.getFromStore(vm.model.file.workspace._id),
     organization: vm => vm.workspace && Organization.getFromStore(vm.workspace.organizationId),
     dropzoneOptions() {
@@ -347,7 +349,7 @@ export default {
           Authorization: vm.accessToken,
         },
         previewTemplate: vm.template(),
-        acceptedFiles: '.OBJ,.FCSTD,.STEP,.STP,.kicad_pcb',
+        acceptedFiles: '.OBJ,.FCSTD,.STEP,.STP' + (vm.kicadEnabled ? ',.kicad_pcb' : ''),
         clickable: '#dropzone-click-target',
         renameFile: file => `${uuidv4()}.${file.name.split('.').pop()}`,
         init() {

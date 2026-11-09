@@ -47,6 +47,7 @@ export const filterSiteConfigForPublic = (siteConfig) => {
     footer: siteConfig.footer,
     homepageContent: siteConfig.homepageContent,
     desktopApp: siteConfig.desktopApp,
+    kicad: siteConfig.kicad,
     oauth: filterOAuthDataForPublic(siteConfig.oauth),
   }
 }

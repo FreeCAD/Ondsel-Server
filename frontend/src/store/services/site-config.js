@@ -80,6 +80,9 @@ export const SITE_CONFIG_DEFAULTS = {
     enabledOpenInDesktopApp: false,
     protocol: 'freecad:',
   },
+  kicad: {
+    enabled: false,
+  },
   oauth: {
     providers: {
       google: {

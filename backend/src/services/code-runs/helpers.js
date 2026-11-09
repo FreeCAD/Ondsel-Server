@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { BadRequest } from '@feathersjs/errors';
+import { workerSourceFileName } from '../models/helpers.js';
 
 
 export const userBelongingCodeRuns = async context => {
@@ -34,7 +35,7 @@ export const canUserAccessModelForRun = async context => {
       { query: { $select: ['organizationId'] } }
     );
     context.data.modelId = sharedModel.cloneModelId;
-    context.params.$modelFileName = uniqueFileName;
+    context.params.$modelFileName = workerSourceFileName(sharedModel.cloneModelId, uniqueFileName);
     context.params.$organizationId = organizationId;
     return context;
   }
@@ -53,7 +54,7 @@ export const canUserAccessModelForRun = async context => {
   if (!workspace.haveWriteAccess) {
     throw new BadRequest('You dont have write access to this model', { type: 'PermissionError' });
   }
-  context.params.$modelFileName = uniqueFileName;
+  context.params.$modelFileName = workerSourceFileName(context.data.modelId, uniqueFileName);
   context.params.$organizationId = workspace.organizationId;
   return context;
 }
