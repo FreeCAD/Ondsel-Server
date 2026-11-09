@@ -87,6 +87,7 @@ The model is the 3D model object in Lens. This can be rendered in the frontend u
 - Create, update, and delete models.
 - Intagrates with file service for version control for models.
 - Integrates with fc-worker service for model rendering and export to different formats.
+- Accepts `.kicad_pcb` uploads as models only when `KICAD_ENABLED` is on. Board models expose a signed `kicadFileUrl` for the KiCanvas viewer.
 
 
 ## Shared Models Service:
@@ -115,6 +116,7 @@ The site config service manages platform-wide configuration and branding setting
 - Homepage content (title, markdown content, RSS feed, banner)
 - Default model for new user registrations
 - Desktop app settings (name, protocol, version)
+- The public site configuration carries `kicad.enabled`, taken from the `KICAD_ENABLED` environment variable at start and not stored in the database
 - OAuth provider configuration:
   - Provider enable/disable toggles
   - Client ID and Secret storage
