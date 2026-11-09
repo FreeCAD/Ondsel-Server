@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -38,7 +39,8 @@ import {
   canUserAccessModelGetMethod,
   userBelongingModels,
   canUserAccessModelPatchMethod,
-  generateStlDownloadLink
+  generateStlDownloadLink,
+  workerSourceFileName,
 } from './helpers.js';
 import {
   ProtectionTypeMap,
@@ -239,6 +241,10 @@ const startObjGeneration = async (context) => {
     throw new BadRequest('Not able to find filename')
   }
 
+  if (fileName.toUpperCase().endsWith('.KICAD_PCB') && !context.app.get('kicadEnabled')) {
+    throw new BadRequest('KiCad support is disabled on this site', { type: 'KicadDisabled' });
+  }
+
   // When input file is STEP, then don't need runner, viewer can render STEP file directly.
   if (fileName.toUpperCase().split('.').pop() === 'STP' || fileName.toUpperCase().split('.').pop() === 'STEP') {
     const uploadService = context.app.service('upload');
@@ -314,6 +320,8 @@ const startExport = async (context) => {
     attributes = result.attributes;
   }
 
+  const sourceFileName = workerSourceFileName(context.id || context.result._id, fileName || data.uniqueFileName);
+
   let command;
   if (data.shouldStartFCStdExport) {
     command = 'EXPORT_FCSTD';
@@ -341,7 +349,7 @@ const startExport = async (context) => {
     },
     data : {
       id: context.id || context.result._id.toString(),
-      fileName: fileName || data.uniqueFileName,
+      fileName: sourceFileName,
       command: command,
       accessToken: params.authentication?.accessToken || params.accessToken,
       attributes: data.attributes || attributes,

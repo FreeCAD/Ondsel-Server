@@ -16,6 +16,7 @@ services:
       - "${PORT:-3030}:${PORT:-3030}"
     environment:
       - HOSTNAME=${HOSTNAME:-localhost}
+      - KICAD_ENABLED=${KICAD_ENABLED:-true}
       - PORT=${PORT:-3030}
       - DB_URL=mongodb://mongodb:27017/backend-db
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
@@ -70,6 +71,9 @@ services:
   kicad-3dmodels:
     image: amrit3701/lens:fc-worker-celery-latest
     command: ["sh", "scripts/fetch-kicad-3dmodels.sh", "/usr/share/kicad/3dmodels"]
+    environment:
+      - KICAD_ENABLED=${KICAD_ENABLED:-true}
+      - KICAD_3D_REF
     restart: "no"
     volumes:
       - ${KICAD_3DMODELS_VOLUME:-kicad_3dmodels}:/usr/share/kicad/3dmodels
