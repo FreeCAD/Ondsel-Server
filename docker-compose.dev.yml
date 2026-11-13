@@ -59,8 +59,8 @@ services:
       - /app/node_modules
     environment:
       - VITE_APP_API_URL=${VITE_APP_API_URL:-http://localhost:3030/}
-      - VITE_MATOMO_URL=${VITE_MATOMO_URL:-http://localhost:7000}
-      - VITE_MATOMO_SITE=${VITE_MATOMO_SITE:-1}
+      - VITE_MATOMO_URL=${VITE_MATOMO_URL:-}
+      - VITE_MATOMO_SITE=${VITE_MATOMO_SITE:-}
       - VITE_STRIPE_PURCHASE_PEER_URL
       - PROXY_SCHEME_PREFIX=${PROXY_SCHEME_PREFIX:-http://}
     depends_on:

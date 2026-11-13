@@ -50,7 +50,7 @@ cp env.with-aws.example .env
 # With analytics (recommended):
 docker-compose --profile matomo-enabled up --build -d
 
-# Without analytics:
+# Without analytics (with VITE_MATOMO_URL empty in .env):
 docker-compose up --build -d
 
 # Rebuild the frontend on env change:
