@@ -24,5 +24,11 @@ export function registerPlugins (app) {
     .use(router)
     .use(store)
     .use(FeathersVuex)
-    .use(VueMatomo, matomoOptions)
+
+  if (matomoOptions.host) {
+    app.use(VueMatomo, matomoOptions)
+  } else {
+    // Analytics are off. The router and the subscription views still push to this queue, which nothing reads.
+    window._paq = window._paq || []
+  }
 }
