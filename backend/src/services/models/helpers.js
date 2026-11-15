@@ -1,9 +1,17 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import { BadRequest } from '@feathersjs/errors';
 
+
+export const workerSourceFileName = (modelId, uniqueFileName) => {
+  if (uniqueFileName && uniqueFileName.toUpperCase().endsWith('.KICAD_PCB')) {
+    return `${modelId.toString()}_generated.FCSTD`;
+  }
+  return uniqueFileName;
+};
 
 export const canUserAccessModelGetMethod = async context => {
 

@@ -1,5 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
@@ -69,7 +70,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <script>
 import {v4 as uuidv4} from "uuid";
-import {mapState} from "vuex";
+import {mapState, mapGetters} from "vuex";
 import Dropzone from "dropzone";
 import { models } from '@feathersjs/vuex';
 
@@ -126,7 +127,8 @@ export default {
   },
   computed: {
     ...mapState('auth', ['accessToken', 'user']),
-    valid3dModelExtensions: () => ['fcstd', 'obj', 'step', 'stp', 'kicad_pcb'],
+    ...mapGetters('app', ['siteConfig']),
+    valid3dModelExtensions: vm => ['fcstd', 'obj', 'step', 'stp', ...(vm.siteConfig?.kicad?.enabled ? ['kicad_pcb'] : [])],
     dropzoneOptions() {
       const h = import.meta.env.VITE_APP_API_URL;
       const vm = this;

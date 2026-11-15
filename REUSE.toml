@@ -41,6 +41,15 @@ path = [
 SPDX-FileCopyrightText = "2024 Victor Kovacs <viktorkovacs@gmail.com>"
 SPDX-License-Identifier = "LGPL-2.1-only"
 
+[[annotations]]
+path = [
+     "frontend/public/kicanvas/kicanvas.js",
+     "frontend/public/kicanvas/NOTICE",
+     "frontend/public/kicanvas/VERSION"
+]
+SPDX-FileCopyrightText = "2022 Alethea Katherine Flowers"
+SPDX-License-Identifier = "MIT"
+
 # Server files
 [[annotations]]
 path = [

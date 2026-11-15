@@ -17,6 +17,7 @@ Common issues and solutions for Lens Platform deployments.
 - [OAuth Issues](#oauth-issues)
 - [Branding Issues](#branding-issues)
 - [Script Execution Issues](#script-execution-issues)
+- [KiCad Issues](#kicad-issues)
 - [Common Issues](#common-issues)
 
 ---
@@ -275,6 +276,64 @@ This means the backend dispatched the job but FC-Worker was unreachable. See [FC
 **Solutions**:
 
 Each of `stdout` and `stderr` is capped at **256 KB**. Reduce the amount of output your script produces (e.g. avoid printing every iteration of a loop).
+
+---
+
+## KiCad Issues
+
+See [KiCad Support](kicad.md) for background.
+
+### Board converts but components are missing
+
+**Symptoms**: The 3D viewer shows the board with some or all components absent.
+
+**Solutions**:
+
+1. **Check the celery log** for the missing models:
+   ```bash
+   docker-compose logs fc-worker-celery | grep "KiCad 3D models missing"
+   ```
+
+2. **Project-folder models**: models referenced as `${KIPRJMOD}/...` are not uploaded because only the `.kicad_pcb` is uploaded. Embed the models in the board or use library models.
+
+3. **WRL-only models**: models without a STEP file are left out.
+
+4. **Library not provisioned**: check that the `kicad-3dmodels` init service completed and that `KICAD_ENABLED` is not `false`:
+   ```bash
+   docker-compose logs kicad-3dmodels
+   ```
+
+---
+
+### "KiCad board has no Edge.Cuts outline"
+
+**Symptoms**: Conversion fails with this message.
+
+**Solutions**:
+
+The board has no closed outline on the `Edge.Cuts` layer. Close the board outline in KiCad and upload the file again.
+
+---
+
+### STL export of a large board is slow or the worker is killed
+
+**Symptoms**: STL export takes a long time, or the FC-Worker container is killed.
+
+**Solutions**:
+
+1. STL meshes every face at 0.1 mm. For very dense boards, export STEP or OBJ instead.
+2. Give the FC-Worker container more memory.
+
+---
+
+### KiCanvas shows an empty view
+
+**Symptoms**: The KiCanvas viewer shows no board.
+
+**Solutions**:
+
+1. KiCanvas could not parse the file. Open the board in KiCad, save it again, and upload the new version.
+2. On a share link, enable **Can view model** on the link.
 
 ---
 

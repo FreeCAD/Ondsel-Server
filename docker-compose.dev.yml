@@ -19,6 +19,7 @@ services:
       - "${PORT:-3030}:${PORT:-3030}"
     environment:
       - NODE_ENV=development
+      - KICAD_ENABLED=${KICAD_ENABLED:-true}
       - HOSTNAME=${HOSTNAME:-localhost}
       - PORT=${PORT:-3030}
       - DB_URL=mongodb://mongodb:27017/backend-db
@@ -91,6 +92,9 @@ services:
       context: ./FC-Worker
       dockerfile: Dockerfile.celery.dev
     command: ["sh", "scripts/fetch-kicad-3dmodels.sh", "/usr/share/kicad/3dmodels"]
+    environment:
+      - KICAD_ENABLED=${KICAD_ENABLED:-true}
+      - KICAD_3D_REF
     restart: "no"
     volumes:
       - ./FC-Worker/scripts:/app/scripts

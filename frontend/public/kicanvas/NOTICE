@@ -1,0 +1,4 @@
+KiCanvas (https://github.com/theacodes/kicanvas), MIT, see LICENSE.md.
+Built from the commit recorded in VERSION; the bundle also contains:
+- earcut (Mapbox), ISC, see LICENSE.earcut
+- KiCad newstroke font glyph data, CC0

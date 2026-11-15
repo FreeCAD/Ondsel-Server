@@ -1,5 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
@@ -73,6 +74,8 @@ docker-compose -f docker-compose.dev.yml restart backend
 ```
 
 That's it! The application should now be running at <http://localhost:3000>
+
+The first start also downloads the KiCad 3D model library (about 5 GB) before the worker comes up. The comments in `env.example` explain how to turn it off.
 
 #### Default Credentials
 
@@ -209,6 +212,7 @@ Additional documentation is available in the [`docs/`](docs/) directory:
 - **[Admin Panel Guide](docs/admin-panel.md)** - Configure branding, OAuth, software releases, and user management
 - **[TrueNAS Installation](docs/lens-truenas-app.md)** - Install Lens on TrueNAS SCALE
 - **[Migration Guide](docs/migration.md)** - Upgrade existing deployments to latest version
+- **[KiCad Support](docs/kicad.md)** - Upload KiCad boards and view them in 3D and KiCanvas
 - **[Workflows](docs/workflows.md)** - Platform workflows including signup, organizations, workspaces, file uploads, and model sharing
 - **[Macro Examples](docs/macro-examples.md)** - Placeholder syntax and ready-to-run macro examples for users
 - **[Services](docs/services.md)** - Backend services documentation

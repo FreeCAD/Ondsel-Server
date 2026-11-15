@@ -147,6 +147,7 @@ export const siteConfigExternalResolver = resolve({
     const [isAdmin] = await isSiteAdministrator(context.params, context.app)
     return isAdmin ? filterOAuthDataForAdmin(value) : filterOAuthDataForPublic(value)
   },
+  kicad: async (_value, _data, context) => ({ enabled: context.app.get('kicadEnabled') }),
   defaultModel: adminOnlyField,
   defaultModelObjUrl: adminOnlyField,
   customized: adminOnlyField,

@@ -25,5 +25,9 @@
   "frontendUrl": "FRONTEND_URL",
   "backendUrl": "VITE_APP_API_URL",
   "slackWebhookUrl": "SLACK_WEBHOOK_URL",
-  "localSignedUrlSecret": "LOCAL_SIGNED_URL_SECRET"
+  "localSignedUrlSecret": "LOCAL_SIGNED_URL_SECRET",
+  "kicadEnabled": {
+    "__name": "KICAD_ENABLED",
+    "__format": "boolean"
+  }
 }

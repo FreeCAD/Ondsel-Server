@@ -52,3 +52,6 @@ docs/.vitepress/cache
 backend/.env
 frontend/.env
 .env
+
+# KiCad 3D model library checkout used by the dev compose
+kicad-3dmodels/

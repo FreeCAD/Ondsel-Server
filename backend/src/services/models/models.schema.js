@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -43,6 +44,7 @@ export const modelSchema = Type.Object(
     attributes: Type.Optional(Type.Object({})),
     errorMsg: Type.Optional(Type.Union([errorMsgType, Type.Null()])),
     objUrl: Type.String(),
+    kicadFileUrl: Type.Optional(Type.String()),
     isSharedModel: Type.Optional(Type.Boolean({default: false})),
     isThumbnailGenerated: Type.Optional(Type.Boolean({default: false})),
     thumbnailUrl: Type.String(),
@@ -139,6 +141,27 @@ export const modelResolver = resolve({
       }
     }
   }),
+  kicadFileUrl: virtual(async (message, context) => {
+    if (!context.app.get('kicadEnabled')) {
+      return undefined;
+    }
+    let fileName = message.uniqueFileName;
+    if (!fileName && message.fileId) {
+      try {
+        const file = await context.app.service('file').get(message.fileId);
+        fileName = file.currentVersion.uniqueFileName;
+      } catch (error) {
+        if (!(error instanceof NotFound)) {
+          throw error;
+        }
+      }
+    }
+    if (!fileName || !fileName.toUpperCase().endsWith('.KICAD_PCB')) {
+      return undefined;
+    }
+    const r = await context.app.service('upload').get(fileName);
+    return r.url || '';
+  }),
   haveWriteAccess: virtual(async (_message, context) => {
     return !context.$isModelBelongsToOpenWorkspace;
   })
@@ -196,7 +219,7 @@ export const modelDataResolver = resolve({
   },
 })
 
-export const modelPublicFields = ['_id', 'isObjGenerated', 'objUrl'];
+export const modelPublicFields = ['_id', 'isObjGenerated', 'objUrl', 'kicadFileUrl'];
 
 // Schema for updating existing entries
 export const modelPatchSchema = Type.Partial(modelSchema, {

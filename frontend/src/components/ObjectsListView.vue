@@ -1,44 +1,57 @@
 <!--
 SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
 <template>
-  <v-treeview
-    v-if="model3d"
-    :items="treeViewItems"
-    item-props
-    slim
-    selectable
-    activatable
-    open-on-click
-    height="90%"
-    density="compact"
-    select-strategy="single-independent"
-    style="position: absolute; top: 70px; max-width: 25%; background: transparent;"
-  >
-    <template v-slot:title="{ item }">
-      <span class="object-title" :title="item.title">{{ item.title }}</span>
-    </template>
-    <template v-slot:prepend="{ item, open }">
-      <v-checkbox v-model="selectedObjects[item.uuid]" density="compact" hide-details @click.stop="objectSelected(item)"/>
+  <div v-if="model3d" style="position: absolute; top: 70px; bottom: 0; max-width: 25%;">
+    <div class="d-flex align-center ml-2">
       <v-btn
-        :icon="item.visibility? 'mdi-eye-outline' : 'mdi-eye-off-outline'"
+        :icon="isListVisible ? 'mdi-dock-left' : '$dockLeftOutline'"
         variant="text"
         flat
-        @click.stop="toggleVisibility(item)"
+        density="comfortable"
+        @click="isListVisible = !isListVisible"
       />
-    </template>
-    <template v-slot:append="{ item, open }">
-      <v-btn
-        v-if="linkedObjects.hasOwnProperty(item.realName)"
-        icon="mdi-open-in-new"
-        variant="text"
-        @click.stop="openAssemblyObjectInfoDialog(item.realName)"
-      />
-    </template>
-  </v-treeview>
+      <span class="text-subtitle-2 text-medium-emphasis ml-1">Objects</span>
+    </div>
+    <v-treeview
+      v-show="isListVisible"
+      :items="treeViewItems"
+      item-props
+      slim
+      selectable
+      activatable
+      open-on-click
+      height="90%"
+      density="compact"
+      select-strategy="single-independent"
+      style="background: transparent;"
+    >
+      <template v-slot:title="{ item }">
+        <span class="object-title" :title="item.title">{{ item.title }}</span>
+      </template>
+      <template v-slot:prepend="{ item, open }">
+        <v-checkbox v-model="selectedObjects[item.uuid]" density="compact" hide-details @click.stop="objectSelected(item)"/>
+        <v-btn
+          :icon="item.visibility? 'mdi-eye-outline' : 'mdi-eye-off-outline'"
+          variant="text"
+          flat
+          @click.stop="toggleVisibility(item)"
+        />
+      </template>
+      <template v-slot:append="{ item, open }">
+        <v-btn
+          v-if="linkedObjects.hasOwnProperty(item.realName)"
+          icon="mdi-open-in-new"
+          variant="text"
+          @click.stop="openAssemblyObjectInfoDialog(item.realName)"
+        />
+      </template>
+    </v-treeview>
+  </div>
   <AssemblyObjectInfoDialog ref="assemblyObjectInfoDialog" />
 </template>
 
@@ -56,6 +69,7 @@ export default {
     }
   },
   data: () => ({
+    isListVisible: true,
     viewer: null,
     open: ['Objects'],
     active: [],

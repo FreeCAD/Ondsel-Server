@@ -1,5 +1,6 @@
 <!--
 SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
@@ -20,14 +21,21 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         location="start"
       >Get Info</v-tooltip>
     </v-btn>
-    <v-btn icon flat @click="fitModelToScreen">
+    <v-btn icon flat :disabled="activeViewer !== '3d'" @click="fitModelToScreen">
       <v-icon>mdi-crop-free</v-icon>
       <v-tooltip
         activator="parent"
         location="start"
       >Fit all or selection</v-tooltip>
     </v-btn>
-    <v-btn icon flat @click="openAttributeViewer">
+    <v-btn v-if="showKicanvasToggle" icon flat @click="toggleViewer">
+      <v-icon>{{ activeViewer === 'kicanvas' ? 'mdi-cube-outline' : 'mdi-chip' }}</v-icon>
+      <v-tooltip
+        activator="parent"
+        location="start"
+      >{{ activeViewer === 'kicanvas' ? 'Show 3D model' : 'Show board in KiCanvas' }}</v-tooltip>
+    </v-btn>
+    <v-btn v-if="showAttributeViewerButton" icon flat @click="openAttributeViewer">
       <v-icon>mdi-view-list</v-icon>
       <v-tooltip
         activator="parent"
@@ -48,7 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         location="start"
       >Export model</v-tooltip>
     </v-btn>
-    <v-btn icon flat :disabled="!user" @click="uploadThumbnail(true)">
+    <v-btn icon flat :disabled="!user || activeViewer !== '3d'" @click="uploadThumbnail(true)">
       <v-icon>mdi-camera</v-icon>
       <v-tooltip
         activator="parent"
@@ -71,8 +79,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       >Open model in {{ siteConfig?.desktopApp?.name }} desktop app</v-tooltip>
     </v-btn> -->
   </v-navigation-drawer>
-  <ModelViewer ref="modelViewer" @model:loaded="modelLoaded" @object:clicked="objectClicked"/>
-  <ObjectsListView ref="objectListView" :model="model" @select-given-object="objectSelected" />
+  <div v-show="activeViewer === '3d' || !isKicanvasLoaded">
+    <ModelViewer ref="modelViewer" @model:loaded="modelLoaded" @object:clicked="objectClicked"/>
+    <ObjectsListView ref="objectListView" :model="model" @select-given-object="objectSelected" />
+  </div>
+  <KicanvasViewer v-if="activeViewer === 'kicanvas'" :src="model.kicadFileUrl" @loaded="isKicanvasLoaded = true" />
   <div class="text-center">
     <v-dialog
       v-model="dialog"
@@ -120,7 +131,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
               class="text-left"
               v-else-if="error === 'InvalidFileType'"
             >
-              <span>Only *.FCStd, *.STEP/STP, *.OBJ and *.kicad_pcb files accepted.</span>
+              <span>Only *.FCStd, *.STEP/STP, *.OBJ{{ kicadEnabled ? ', *.kicad_pcb' : '' }} files accepted.</span>
             </v-alert>
             <v-alert
               variant="outlined"
@@ -184,7 +195,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                 <div class="text-h6 mt-6">
                   <v-icon icon="mdi-cloud-upload"></v-icon> Drag file to upload or <v-btn id="dropzone-click-target">BROWSE</v-btn>
                 </div>
-                <div class="text-caption mt-2 mb-6">Allowed extensions: FCSTD, STEP, STP, OBJ, KICAD_PCB</div>
+                <div class="text-caption mt-2 mb-6">Allowed extensions: FCSTD, STEP, STP, OBJ{{ kicadEnabled ? ', KICAD_PCB' : '' }}</div>
                 <div class="d-flex justify-center">
                   <div>
                     <v-checkbox
@@ -263,6 +274,7 @@ import AttributeViewer from '@/components/AttributeViewer';
 import ExportModelDialog from '@/components/ExportModelDialog';
 import MangeSharedModels from '@/components/MangeSharedModels';
 import ModelInfo from '@/components/ModelInfo.vue';
+import KicanvasViewer from '@/components/KicanvasViewer.vue';
 import ObjectsListView from '@/components/ObjectsListView.vue';
 import openDesktopAppMixin from '@/mixins/openDesktopAppMixin';
 import LaunchDesktopAppDialog from '@/components/LaunchDesktopAppDialog.vue';
@@ -278,6 +290,7 @@ export default {
     ModelViewer,
     ExportModelDialog,
     ModelInfo,
+    KicanvasViewer,
     ObjectsListView,
     LaunchDesktopAppDialog,
     RunScriptPanel,
@@ -299,6 +312,8 @@ export default {
     runScriptDrawerWidth: 650,
     generatePublicLinkValue: null,
     viewer: null,
+    activeViewer: '3d',
+    isKicanvasLoaded: false,
   }),
   mounted() {
     new Dropzone(this.$refs.dropzone, this.dropzoneOptions);
@@ -332,6 +347,11 @@ export default {
     ...mapGetters('auth', ['isAuthenticated']),
     ...mapGetters('app', ['siteConfig']),
     canHaveWriteAccess: vm => vm.workspace ? vm.workspace.haveWriteAccess : false,
+    kicadEnabled: vm => !!vm.siteConfig?.kicad?.enabled,
+    showKicanvasToggle: vm => vm.isKicadModel,
+    isKicadModel: vm => !!vm.model?.kicadFileUrl,
+    hasAttributes: vm => Object.keys(vm.model?.attributes || {}).length > 0,
+    showAttributeViewerButton: vm => vm.hasAttributes || !vm.isKicadModel,
     workspace: vm => vm.model && vm.model.file && Workspace.getFromStore(vm.model.file.workspace._id),
     organization: vm => vm.workspace && Organization.getFromStore(vm.workspace.organizationId),
     dropzoneOptions() {
@@ -347,7 +367,7 @@ export default {
           Authorization: vm.accessToken,
         },
         previewTemplate: vm.template(),
-        acceptedFiles: '.OBJ,.FCSTD,.STEP,.STP,.kicad_pcb',
+        acceptedFiles: '.OBJ,.FCSTD,.STEP,.STP' + (vm.kicadEnabled ? ',.kicad_pcb' : ''),
         clickable: '#dropzone-click-target',
         renameFile: file => `${uuidv4()}.${file.name.split('.').pop()}`,
         init() {
@@ -441,6 +461,10 @@ export default {
   methods: {
     fitModelToScreen() {
       this.$refs.modelViewer.fitModelToScreen();
+    },
+    toggleViewer() {
+      this.activeViewer = this.activeViewer === '3d' ? 'kicanvas' : '3d';
+      this.isKicanvasLoaded = false;
     },
     openAttributeViewer() {
       this.$refs.attributeViewer.$data.dialog = true;

@@ -21,6 +21,7 @@ The Lens platform consists of several key components that work together:
 - Provides the user interface and interactive experience
 - Communicates with backend via feathersjs socketio-client
 - Handles client-side model rendering
+- Bundles the KiCanvas viewer for KiCad boards (see [Updating KiCanvas](#updating-kicanvas))
 
 ### FC-Worker Service
 - Dedicated service for processing and rendering 3D models
@@ -28,6 +29,8 @@ The Lens platform consists of several key components that work together:
 - Handles model format conversions and exports
 - Provides a REST API written in FastAPI for communication with the backend server
 - Offloads the model processing tasks to celery worker for parallel processing
+- Converts KiCad boards to FreeCAD models with the KiCadStepUp workbench
+- Resolves component 3D models from the mounted KiCad 3D model library
 
 ### Storage Systems
 - MongoDB for structured data and metadata
@@ -100,3 +103,27 @@ src/services/
 - `src/services/[service-name]/helpers.js`: This file contains helper functions for the service. These functions are mostly used in service hooks or service methods.
 
 - `src/services/[service-name]/commands/[command-name].js`: This file contains command function to perform a specific task related to the service, like `addFilesToDirectory`, `addUsersToGroup`, etc. These functions are used in the service's hooks or other services' hooks.
+
+
+## Updating KiCanvas:
+
+KiCanvas is not published on npm, so the frontend ships a bundle built from a pinned commit under `frontend/public/kicanvas/`. To move to a newer commit:
+
+```bash
+git clone https://github.com/theacodes/kicanvas.git
+cd kicanvas
+git checkout <commit>
+npm ci
+npm run build                                  # writes build/kicanvas.js
+
+DST=/path/to/Ondsel-Server/frontend/public/kicanvas
+cp build/kicanvas.js "$DST/kicanvas.js"
+cp LICENSE.md "$DST/LICENSE.md"
+cp third_party/earcut/LICENSE "$DST/LICENSE.earcut"
+git log -1 --format='%H %ci %s' > "$DST/VERSION"
+```
+
+Then:
+- Check that `NOTICE` and the `frontend/public/kicanvas` block in `REUSE.toml` still describe what the bundle contains.
+- Run `reuse lint`.
+- Open a board in the viewer.

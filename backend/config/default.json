@@ -31,5 +31,6 @@
       "passwordField": "password"
     }
   },
-  "useS3": false
+  "useS3": false,
+  "kicadEnabled": true
 }

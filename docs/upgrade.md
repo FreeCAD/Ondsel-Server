@@ -18,6 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
   - [Model upload and viewer checks](#model-upload-and-viewer-checks)
   - [Exports](#exports)
   - [Assemblies](#assemblies)
+  - [KiCad boards](#kicad-boards)
 - [Where to check logs](#where-to-check-logs)
 - [Troubleshooting](#troubleshooting)
 
@@ -36,7 +37,7 @@ The latest base image Dockerfile lives in: [amrit3701/docker-freecad-cli](https:
 ### Build steps
 1. Update the `FREECAD_VERSION` arg in the base image Dockerfile to the new version.
 2. Attempt the build and iteratively add missing packages to the `apt-get` install list until compilation succeeds. Refer to the upstream list of packages as guidance: [FreeCAD Wiki: Compile on Linux → Debian and Ubuntu](https://wiki.freecad.org/Compile_on_Linux#Debian_and_Ubuntu).
-3. If compilation fails due to workbenches tightly coupled with the GUI (e.g., TechDraw), exclude them via `-DBUILD_{WORKBENCH}=OFF` (for example, `-DBUILD_TECHDRAW=OFF`) in the CMake command.
+3. If compilation fails due to workbenches tightly coupled with the GUI (e.g., TechDraw), exclude them via `-DBUILD_{WORKBENCH}=OFF` (for example, `-DBUILD_TECHDRAW=OFF`) in the CMake command. Keep the CAM module (`BUILD_CAM=ON`), because KiCad conversion needs `Path.Area`.
 4. Publish the built image with an appropriate tag to `amrit3701/freecad-cli` or to your own container registry, and use that image in the following steps.
 
 ### Notes on GUI/workbenches
@@ -49,7 +50,7 @@ After a successful build:
 ```bash
 python3
 ```
-- Inside the `python3` REPL, try importing key workbenches (e.g., `Part`, `Arch`, `Draft`) to ensure they load without errors.
+- Inside the `python3` REPL, try importing key workbenches (e.g., `Part`, `Arch`, `Draft`) to ensure they load without errors. Also check that `import Path; Path.Area` works, because KiCad conversion needs it.
 
 ## Update FC-Worker to use the new base image
 Once your new `freecad-cli` image is published, update FC-Worker Dockerfiles to reference it. Typical files include:
@@ -77,6 +78,11 @@ Perform the following checks after pointing FC-Worker to the new base image.
   - Open `assembly.FCStd` file from the workspace and confirm it loads correctly.
   - Toggle visibility of components in the assembly from the left sidebar in the model viewer to ensure expected behavior.
   - Use the "redirect to component" icon on components from the left sidebar in the model viewer and verify navigation to the correct component details page.
+
+### KiCad boards
+- Upload a `.kicad_pcb` file to a workspace.
+  - Confirm the board and its components render in the 3D viewer.
+  - Confirm the KiCanvas switch (chip icon) appears in the right toolbar and shows the board.
 
 ## Where to check logs
 - Backend service logs (Node): run the stack via `docker-compose` and inspect container logs for `backend` and related services.
