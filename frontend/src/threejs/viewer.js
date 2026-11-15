@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -9,7 +10,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { fitCameraToSelection, getSelectedObject } from '@/threejs/cameraUtils'
 import { Importer } from '@/threejs/libs/import/importer';
 import { OBJ_COLOR, OBJ_HIGHLIGHTED_COLOR, EDGE_COLOR } from '@/threejs/libs/constants';
-import { getObject3dFromScene } from '@/threejs/libs/utils/sceneutils';
+import { getMeshesFromScene } from '@/threejs/libs/utils/sceneutils';
 import {ModelObjectType} from "@/threejs/libs/model/object";
 
 
@@ -188,26 +189,28 @@ export class Viewer {
   selectGivenObject(modelObject3d, triggerObjectClickEvent=false) {
     if (!this.selectedObjs.includes(modelObject3d)) {
       if (modelObject3d.IsShapeType() || modelObject3d.type === ModelObjectType.Image) {
-        const meshObj = getObject3dFromScene(this.scene, modelObject3d);
-        if (Array.isArray(meshObj.material)) {
-          // per-face materials: swap the whole array for one highlight material
-          meshObj.userData.faceMaterials = meshObj.material;
-          meshObj.material = new THREE.MeshPhongMaterial({color: OBJ_HIGHLIGHTED_COLOR});
-        } else {
-          meshObj.material.color.set(OBJ_HIGHLIGHTED_COLOR);
+        for (const meshObj of getMeshesFromScene(this.scene, modelObject3d)) {
+          if (Array.isArray(meshObj.material)) {
+            // per-face materials: swap the whole array for one highlight material
+            meshObj.userData.faceMaterials = meshObj.material;
+            meshObj.material = new THREE.MeshPhongMaterial({color: OBJ_HIGHLIGHTED_COLOR});
+          } else {
+            meshObj.material.color.set(OBJ_HIGHLIGHTED_COLOR);
+          }
         }
       }
       this.selectedObjs.push(modelObject3d);
     } else {
       const color = modelObject3d ? modelObject3d.GetColor() : OBJ_COLOR;
       if (modelObject3d.IsShapeType() || modelObject3d.type === ModelObjectType.Image) {
-        const meshObj = getObject3dFromScene(this.scene, modelObject3d);
-        if (meshObj.userData.faceMaterials) {
-          meshObj.material.dispose();
-          meshObj.material = meshObj.userData.faceMaterials;
-          delete meshObj.userData.faceMaterials;
-        } else {
-          meshObj.material.color.set(color);
+        for (const meshObj of getMeshesFromScene(this.scene, modelObject3d)) {
+          if (meshObj.userData.faceMaterials) {
+            meshObj.material.dispose();
+            meshObj.material = meshObj.userData.faceMaterials;
+            delete meshObj.userData.faceMaterials;
+          } else {
+            meshObj.material.color.set(color);
+          }
         }
       }
       const index = this.selectedObjs.indexOf(modelObject3d);
