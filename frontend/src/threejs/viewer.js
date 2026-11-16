@@ -174,8 +174,9 @@ export class Viewer {
   }
 
   onPointerClicked(event) {
-    this.pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-    this.pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this.pointer.x = ( (event.clientX - rect.left) / rect.width ) * 2 - 1;
+    this.pointer.y = - ( (event.clientY - rect.top) / rect.height ) * 2 + 1;
 
     const selectedObj = getSelectedObject(this.raycaster, this.camera, this.pointer, this.obj);
     if (selectedObj) {
