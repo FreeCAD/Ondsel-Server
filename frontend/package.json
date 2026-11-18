@@ -31,7 +31,7 @@
     "roboto-fontface": "*",
     "rss-parser": "^3.13.0",
     "socket.io-client": "^4.6.1",
-    "three": "^0.150.0",
+    "three": "^0.186.1",
     "uuid": "^9.0.0",
     "vue": "^3.3.0",
     "vue-matomo": "^4.2.0",

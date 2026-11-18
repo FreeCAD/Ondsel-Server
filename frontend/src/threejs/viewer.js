@@ -100,9 +100,9 @@ export class Viewer {
   }
 
   createLights() {
-    const ambientLight = new THREE.AmbientLight(0xcccccc, 0.2);
+    const ambientLight = new THREE.AmbientLight(0xcccccc, 0.2 * Math.PI);
     this.scene.add(ambientLight);
-    const pointLight = new THREE.PointLight(0xffffff, 0.8);
+    const pointLight = new THREE.PointLight(0xffffff, 0.8 * Math.PI, 0, 0);
     this.camera.add(pointLight);
   }
 
@@ -150,6 +150,7 @@ export class Viewer {
 
   initControls() {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.zoomToCursor = true;
   }
 
   addAxesHelper() {

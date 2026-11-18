@@ -360,7 +360,7 @@ class FreeCadDocument
                     continue;
                 }
                 faceColors = readShapeAppearance (this.files[file]).map (material => ({
-                    color : new THREE.Color (...intToRgba (material.diffuseColor)),
+                    color : new THREE.Color().setRGB(...intToRgba(material.diffuseColor).slice(0, 3), THREE.SRGBColorSpace),
                     transparency : material.transparency
                 }));
             } else if (propertyName === 'DiffuseColor' && faceColors.length === 0) {
@@ -369,7 +369,7 @@ class FreeCadDocument
                     continue;
                 }
                 faceColors = readColorList (this.files[file]).map (packed => ({
-                    color : new THREE.Color (...intToRgba (packed)),
+                    color : new THREE.Color().setRGB(...intToRgba(packed).slice(0, 3), THREE.SRGBColorSpace),
                     transparency : 0
                 }));
             }
@@ -460,7 +460,7 @@ class FreeCadDocument
                      */
                     let colorString = this.GetFirstChildValue (propertyElement, 'PropertyColor', 'value');
                     let colorInt = parseInt (colorString, 10);
-                    object.color = new THREE.Color(...intToRgba(colorInt))
+                    object.color = new THREE.Color().setRGB(...intToRgba(colorInt).slice(0, 3), THREE.SRGBColorSpace)
                 } else if (propertyName === 'ShapeAppearance') {
                     /*
                     <Property name="ShapeAppearance" type="App::PropertyMaterialList" status="9">
@@ -479,7 +479,7 @@ class FreeCadDocument
                      */
                     let colorString = this.GetFirstChildValue (propertyElement, 'PropertyMaterial', 'diffuseColor');
                     const colorInt = parseInt (colorString, 10);
-                    object.color = new THREE.Color(...intToRgba(colorInt));
+                    object.color = new THREE.Color().setRGB(...intToRgba(colorInt).slice(0, 3), THREE.SRGBColorSpace);
                 }
             }
         }
