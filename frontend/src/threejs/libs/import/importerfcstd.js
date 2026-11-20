@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -161,16 +162,16 @@ class FreeCadDocument
         let objectElements = objectsElement.getElementsByTagName('Object');
         for (let objectElement of objectElements) {
           let objectName = objectElement.getAttribute('name');
-          if (!linkedObjectsName.includes(objectName)) {
-            continue;
-          }
           let properties = objectElement.getElementsByTagName('Property');
           for (let propertyElement of properties) {
             let name = propertyElement.getAttribute('name');
-            if (name === 'LinkedObject') {
+            if (name === 'LinkedObject' && linkedObjectsName.includes(objectName)) {
               let xLinkElement = propertyElement.getElementsByTagName('XLink')[0];
               let fileName = xLinkElement.getAttribute('file');
               linkedFiles[objectName] = fileName;
+            } else if (name === 'SourceFile') {
+              // set by the KiCad converter on components placed from project-folder models
+              linkedFiles[objectName] = propertyElement.getElementsByTagName('String')[0].getAttribute('value');
             }
           }
         }
@@ -359,7 +360,7 @@ class FreeCadDocument
                     continue;
                 }
                 faceColors = readShapeAppearance (this.files[file]).map (material => ({
-                    color : new THREE.Color (...intToRgba (material.diffuseColor)),
+                    color : new THREE.Color().setRGB(...intToRgba(material.diffuseColor).slice(0, 3), THREE.SRGBColorSpace),
                     transparency : material.transparency
                 }));
             } else if (propertyName === 'DiffuseColor' && faceColors.length === 0) {
@@ -368,7 +369,7 @@ class FreeCadDocument
                     continue;
                 }
                 faceColors = readColorList (this.files[file]).map (packed => ({
-                    color : new THREE.Color (...intToRgba (packed)),
+                    color : new THREE.Color().setRGB(...intToRgba(packed).slice(0, 3), THREE.SRGBColorSpace),
                     transparency : 0
                 }));
             }
@@ -459,7 +460,7 @@ class FreeCadDocument
                      */
                     let colorString = this.GetFirstChildValue (propertyElement, 'PropertyColor', 'value');
                     let colorInt = parseInt (colorString, 10);
-                    object.color = new THREE.Color(...intToRgba(colorInt))
+                    object.color = new THREE.Color().setRGB(...intToRgba(colorInt).slice(0, 3), THREE.SRGBColorSpace)
                 } else if (propertyName === 'ShapeAppearance') {
                     /*
                     <Property name="ShapeAppearance" type="App::PropertyMaterialList" status="9">
@@ -478,7 +479,7 @@ class FreeCadDocument
                      */
                     let colorString = this.GetFirstChildValue (propertyElement, 'PropertyMaterial', 'diffuseColor');
                     const colorInt = parseInt (colorString, 10);
-                    object.color = new THREE.Color(...intToRgba(colorInt));
+                    object.color = new THREE.Color().setRGB(...intToRgba(colorInt).slice(0, 3), THREE.SRGBColorSpace);
                 }
             }
         }

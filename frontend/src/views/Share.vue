@@ -127,7 +127,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <ModelViewer ref="modelViewer" :full-screen="isWindowLoadedInIframe" @model:loaded="modelLoaded" @object:clicked="objectClicked"/>
     <ObjectsListView v-if="!isWindowLoadedInIframe" ref="objectListView" @select-given-object="objectSelected" />
   </div>
-  <KicanvasViewer v-if="activeViewer === 'kicanvas'" :src="model.kicadFileUrl" @loaded="isKicanvasLoaded = true" />
+  <KicanvasViewer v-if="activeViewer === 'kicanvas'" :files="model.kicadProjectFiles" @loaded="isKicanvasLoaded = true" />
   <div class="text-center">
     <v-dialog
       v-model="dialog"
@@ -346,7 +346,7 @@ export default {
     isWindowLoadedInIframe: (vm) => vm.$route.meta.isWindowLoadedInIframe,
     hasBasicRights: (vm) => vm.isAuthenticated && vm.user?.tier !== undefined && vm.user?.tier !== 'Unverified',
     showKicanvasToggle: vm => vm.isKicadModel && vm.sharedModel?.canViewModel,
-    isKicadModel: vm => !!vm.model?.kicadFileUrl,
+    isKicadModel: vm => !!vm.model?.kicadProjectFiles?.length,
     hasAttributes: vm => Object.keys(vm.model?.attributes || {}).length > 0,
     showAttributeViewerButton: vm => vm.hasAttributes || !vm.isKicadModel,
     title: (vm) => `${vm.sharedModel?.title || ''} - ${vm.siteConfig?.siteTitle}`,
