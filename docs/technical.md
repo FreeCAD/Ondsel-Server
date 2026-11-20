@@ -31,6 +31,7 @@ The Lens platform consists of several key components that work together:
 - Offloads the model processing tasks to celery worker for parallel processing
 - Converts KiCad boards to FreeCAD models with the KiCadStepUp workbench
 - Resolves component 3D models from the mounted KiCad 3D model library
+- Downloads project-folder component models from the board's Lens folder and reports the ones it could not load
 
 ### Storage Systems
 - MongoDB for structured data and metadata

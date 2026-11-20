@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2024 Ondsel <development@ondsel.com>
+// SPDX-FileCopyrightText: 2026 Amritpal Singh <amrit3701@gmail.com>
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -161,16 +162,16 @@ class FreeCadDocument
         let objectElements = objectsElement.getElementsByTagName('Object');
         for (let objectElement of objectElements) {
           let objectName = objectElement.getAttribute('name');
-          if (!linkedObjectsName.includes(objectName)) {
-            continue;
-          }
           let properties = objectElement.getElementsByTagName('Property');
           for (let propertyElement of properties) {
             let name = propertyElement.getAttribute('name');
-            if (name === 'LinkedObject') {
+            if (name === 'LinkedObject' && linkedObjectsName.includes(objectName)) {
               let xLinkElement = propertyElement.getElementsByTagName('XLink')[0];
               let fileName = xLinkElement.getAttribute('file');
               linkedFiles[objectName] = fileName;
+            } else if (name === 'SourceFile') {
+              // set by the KiCad converter on components placed from project-folder models
+              linkedFiles[objectName] = propertyElement.getElementsByTagName('String')[0].getAttribute('value');
             }
           }
         }
