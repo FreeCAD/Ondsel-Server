@@ -52,7 +52,7 @@ export function intToRgba(colorInt) {
 }
 
 export function linearRgbToColor(rgb) {
-  return new THREE.Color(rgb[0], rgb[1], rgb[2]).convertLinearToSRGB();
+  return new THREE.Color().setRGB(rgb[0], rgb[1], rgb[2]);
 }
 
 // faceColors: [{color, transparency}] per b-rep face, in the order of brepFaces

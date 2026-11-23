@@ -83,7 +83,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <ModelViewer ref="modelViewer" @model:loaded="modelLoaded" @object:clicked="objectClicked"/>
     <ObjectsListView ref="objectListView" :model="model" @select-given-object="objectSelected" />
   </div>
-  <KicanvasViewer v-if="activeViewer === 'kicanvas'" :src="model.kicadFileUrl" @loaded="isKicanvasLoaded = true" />
+  <KicanvasViewer v-if="activeViewer === 'kicanvas'" :files="model.kicadProjectFiles" @loaded="isKicanvasLoaded = true" />
+  <ModelWarnings
+    v-if="model"
+    :warnings="model.generationWarnings"
+    :can-recompute="model.haveWriteAccess"
+    :recomputing="isRecomputing"
+    @recompute="recomputeModel"
+  />
   <div class="text-center">
     <v-dialog
       v-model="dialog"
@@ -274,6 +281,7 @@ import AttributeViewer from '@/components/AttributeViewer';
 import ExportModelDialog from '@/components/ExportModelDialog';
 import MangeSharedModels from '@/components/MangeSharedModels';
 import ModelInfo from '@/components/ModelInfo.vue';
+import ModelWarnings from '@/components/ModelWarnings.vue';
 import KicanvasViewer from '@/components/KicanvasViewer.vue';
 import ObjectsListView from '@/components/ObjectsListView.vue';
 import openDesktopAppMixin from '@/mixins/openDesktopAppMixin';
@@ -290,6 +298,7 @@ export default {
     ModelViewer,
     ExportModelDialog,
     ModelInfo,
+    ModelWarnings,
     KicanvasViewer,
     ObjectsListView,
     LaunchDesktopAppDialog,
@@ -314,6 +323,7 @@ export default {
     viewer: null,
     activeViewer: '3d',
     isKicanvasLoaded: false,
+    isRecomputing: false,
   }),
   mounted() {
     new Dropzone(this.$refs.dropzone, this.dropzoneOptions);
@@ -349,7 +359,7 @@ export default {
     canHaveWriteAccess: vm => vm.workspace ? vm.workspace.haveWriteAccess : false,
     kicadEnabled: vm => !!vm.siteConfig?.kicad?.enabled,
     showKicanvasToggle: vm => vm.isKicadModel,
-    isKicadModel: vm => !!vm.model?.kicadFileUrl,
+    isKicadModel: vm => !!vm.model?.kicadProjectFiles?.length,
     hasAttributes: vm => Object.keys(vm.model?.attributes || {}).length > 0,
     showAttributeViewerButton: vm => vm.hasAttributes || !vm.isKicadModel,
     workspace: vm => vm.model && vm.model.file && Workspace.getFromStore(vm.model.file.workspace._id),
@@ -586,7 +596,8 @@ export default {
       this.viewer.selectGivenObject(object3d);
     },
     recomputeModel() {
-      if (this.model) {
+      if (this.model && !this.isRecomputing) {
+        this.isRecomputing = true;
         this.model.patch({
           data: {
             latestLogErrorIdForObjGenerationCommand: null,
@@ -594,7 +605,9 @@ export default {
             shouldStartObjGeneration: true,
             uniqueFileName: this.model.uniqueFileName,
           }
-        })
+        }).catch(() => {
+          this.isRecomputing = false;
+        });
       }
     },
     getDesktopAppUrl(model) {
@@ -605,6 +618,11 @@ export default {
     }
   },
   watch: {
+    'model.isObjGenerationInProgress'(inProgress, wasInProgress) {
+      if (wasInProgress && !inProgress && this.isRecomputing) {
+        window.location.reload();
+      }
+    },
     'model.isObjGenerated'(v) {
       if (v && !this.model.isObjGenerationInProgress) {
         if (this.isReloadingOBJ) {

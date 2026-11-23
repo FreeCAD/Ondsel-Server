@@ -87,7 +87,7 @@ The model is the 3D model object in Lens. This can be rendered in the frontend u
 - Create, update, and delete models.
 - Intagrates with file service for version control for models.
 - Integrates with fc-worker service for model rendering and export to different formats.
-- Accepts `.kicad_pcb` uploads as models only when `KICAD_ENABLED` is on. Board models expose a signed `kicadFileUrl` for the KiCanvas viewer.
+- Accepts `.kicad_pcb` uploads as models only when `KICAD_ENABLED` is on. Board models expose signed `kicadProjectFiles` for the KiCanvas viewer.
 
 
 ## Shared Models Service:
